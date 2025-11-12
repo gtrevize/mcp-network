@@ -1,64 +1,46 @@
 /**
- * JWT authentication and RBAC implementation
+ * JWT authentication for server-level access
+ * API Key authentication for user-level access
  */
 import jwt from 'jsonwebtoken';
-import { AuthToken } from '../types/index.js';
-import { logger } from '../logger/index.js';
+import { getConfig } from '../config/loader.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'CHANGE_THIS_SECRET_IN_PRODUCTION';
-
-if (JWT_SECRET === 'CHANGE_THIS_SECRET_IN_PRODUCTION') {
-  logger.warn('⚠️  Using default JWT secret - SET JWT_SECRET environment variable!');
+// Get JWT secret from config (which merges .env and config.json)
+function getJWTSecret(): string {
+  return getConfig().jwt.secret;
 }
 
 /**
- * Verify and decode JWT token
+ * Verify JWT token (server-level authentication)
+ * This token never expires and is shared across all clients
  */
-export function verifyToken(token: string): AuthToken {
+export function verifyServerToken(token: string): boolean {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as AuthToken;
+    const decoded = jwt.verify(token, getJWTSecret()) as any;
 
-    // Validate required fields
-    if (!decoded.sub || !decoded.roles || !decoded.permissions) {
-      throw new Error('Invalid token structure: missing required fields');
-    }
-
-    return decoded;
+    // Check if it's the server token
+    return decoded.type === 'server' && decoded.server === 'mcp-network';
   } catch (error) {
-    if (error instanceof jwt.TokenExpiredError) {
-      throw new Error('Token has expired');
-    } else if (error instanceof jwt.JsonWebTokenError) {
-      throw new Error('Invalid token');
-    }
-    throw error;
+    return false;
   }
 }
 
 /**
- * Check if user has required permission
+ * Generate the permanent server JWT token
+ * This should be done once and stored in config
  */
-export function hasPermission(token: AuthToken, requiredPermission: string): boolean {
-  // Admin role has all permissions
-  if (token.roles.includes('admin')) {
-    return true;
-  }
+export function generateServerToken(): string {
+  const payload = {
+    type: 'server',
+    server: 'mcp-network',
+    version: '1.0.0',
+    iat: Math.floor(Date.now() / 1000)
+  };
 
-  return token.permissions.includes(requiredPermission);
+  // No expiration for server token
+  return jwt.sign(payload, getJWTSecret());
 }
 
-/**
- * Check if user has required role
- */
-export function hasRole(token: AuthToken, requiredRole: string): boolean {
-  return token.roles.includes(requiredRole);
-}
-
-/**
- * Check if user has any of the required roles
- */
-export function hasAnyRole(token: AuthToken, requiredRoles: string[]): boolean {
-  return requiredRoles.some((role) => token.roles.includes(role));
-}
 
 /**
  * Permission definitions for RBAC
@@ -132,21 +114,3 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
 };
 
-/**
- * Generate a token for testing (development only)
- */
-export function generateTestToken(
-  userId: string,
-  roles: string[] = [ROLES.ADMIN],
-  expiresIn: string = '24h'
-): string {
-  const permissions = roles.flatMap((role) => ROLE_PERMISSIONS[role] || []);
-
-  const payload = {
-    sub: userId,
-    roles,
-    permissions: [...new Set(permissions)], // Remove duplicates
-  };
-
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: expiresIn as any });
-}

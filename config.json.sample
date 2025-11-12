@@ -1,0 +1,61 @@
+{
+  "server": {
+    "name": "mcp-network",
+    "version": "1.0.0",
+    "description": "MCP Network Testing Server"
+  },
+  "jwt": {
+    "secret": null,
+    "serverToken": null
+  },
+  "security": {
+    "jailbreakDetection": true,
+    "inputValidation": true,
+    "allowedIPs": []
+  },
+  "rateLimit": {
+    "enabled": true,
+    "maxRequests": 100,
+    "windowMs": 60000
+  },
+  "tools": {
+    "ping": { "enabled": true, "maxTimeout": 10000, "maxCount": 10 },
+    "traceroute": { "enabled": true, "maxTimeout": 30000, "maxHops": 30 },
+    "nslookup": { "enabled": true, "maxTimeout": 5000 },
+    "whois": { "enabled": true, "maxTimeout": 10000 },
+    "dig": { "enabled": true, "maxTimeout": 5000 },
+    "host": { "enabled": true, "maxTimeout": 5000 },
+    "curl": { "enabled": true, "maxTimeout": 30000 },
+    "ssl_check": { "enabled": true, "maxTimeout": 10000 },
+    "port_scan": { "enabled": true, "maxTimeout": 30000, "maxRange": 100 },
+    "nmap": { "enabled": true, "maxTimeout": 60000 },
+    "tcpdump": { "enabled": false, "maxTimeout": 30000, "requiresSudo": true },
+    "iperf": { "enabled": false, "maxTimeout": 60000, "requiresSudo": false }
+  },
+  "apiKeys": {
+    "admin-key-1": {
+      "key": "your-generated-api-key-here",
+      "userId": "admin",
+      "roles": ["admin"],
+      "enabled": true,
+      "description": "Primary admin API key",
+      "createdAt": "2025-01-01T00:00:00Z"
+    },
+    "dev-key-1": {
+      "key": "another-generated-api-key-here",
+      "userId": "developer",
+      "roles": ["developer"],
+      "enabled": true,
+      "description": "Development API key",
+      "createdAt": "2025-01-01T00:00:00Z"
+    },
+    "readonly-key-1": {
+      "key": "readonly-api-key-here",
+      "userId": "guest",
+      "roles": ["readonly"],
+      "enabled": false,
+      "description": "Suspended guest access",
+      "createdAt": "2025-01-01T00:00:00Z"
+    }
+  }
+}

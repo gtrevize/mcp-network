@@ -5,6 +5,7 @@ import * as tls from 'tls';
 import { TlsTestOptions, ToolResult } from '../types/index.js';
 import { validateHost, validatePort, validateTimeout } from '../middleware/validation.js';
 import { logger } from '../logger/index.js';
+import { validateTlsCertificate } from '../utils/output-validator.js';
 
 const DEFAULT_TIMEOUT = 10000;
 const MAX_TIMEOUT = 30000;
@@ -39,11 +40,33 @@ export async function testTls(options: TlsTestOptions): Promise<ToolResult> {
     }
 
     const timeout = validateTimeout(options.timeout, DEFAULT_TIMEOUT, MAX_TIMEOUT);
-    const servername = options.servername || target;
 
-    logger.debug({ target, port, servername, timeout }, 'Testing TLS certificate');
+    // Determine servername for SNI (Server Name Indication)
+    // If target is an IP address, don't send SNI (some servers reject it)
+    // If servername is explicitly provided, use it
+    const isIpAddress = /^(\d{1,3}\.){3}\d{1,3}$|^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$/.test(target);
+    const servername = options.servername || (isIpAddress ? undefined : target);
+
+    logger.debug({ target, port, servername, timeout, isIpAddress }, 'Testing TLS certificate');
 
     const certInfo = await getTlsCertificate(target, port, servername, timeout);
+
+    // Validate TLS certificate
+    const validation = validateTlsCertificate(certInfo);
+    if (!validation.valid) {
+      logger.warn({ errors: validation.errors, warnings: validation.warnings, certInfo }, 'TLS certificate validation failed');
+      return {
+        success: false,
+        error: `Invalid TLS certificate: ${validation.errors.join(', ')}`,
+        executionTime: Date.now() - startTime,
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    // Log warnings if any
+    if (validation.warnings.length > 0) {
+      logger.warn({ warnings: validation.warnings, certInfo }, 'TLS certificate validation warnings');
+    }
 
     return {
       success: true,
@@ -65,17 +88,23 @@ export async function testTls(options: TlsTestOptions): Promise<ToolResult> {
 function getTlsCertificate(
   host: string,
   port: number,
-  servername: string,
+  servername: string | undefined,
   timeout: number
 ): Promise<any> {
   return new Promise((resolve, reject) => {
+    const connectOptions: tls.ConnectionOptions = {
+      host,
+      port,
+      rejectUnauthorized: false, // We want to see the cert even if invalid
+    };
+
+    // Only include servername if provided (don't send SNI for IP addresses)
+    if (servername) {
+      connectOptions.servername = servername;
+    }
+
     const socket = tls.connect(
-      {
-        host,
-        port,
-        servername,
-        rejectUnauthorized: false, // We want to see the cert even if invalid
-      },
+      connectOptions,
       () => {
         const cert = socket.getPeerCertificate(true);
         const protocol = socket.getProtocol();

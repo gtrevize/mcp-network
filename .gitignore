@@ -3,6 +3,7 @@ dist/
 *.log
 .env
 .env.local
+config.json
 *.pcap
 *.pcap.gz
 coverage/
@@ -12,3 +13,9 @@ coverage/
 *.crt
 .vscode/
 .idea/
+
+# Backup files
+*~
+*.swp
+*.swo
+*.bak

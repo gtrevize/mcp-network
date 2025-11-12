@@ -2,101 +2,126 @@
  * Tests for JWT authentication and RBAC
  */
 import {
-  verifyToken,
-  hasPermission,
-  hasRole,
-  generateTestToken,
+  verifyServerToken,
+  generateServerToken,
   PERMISSIONS,
   ROLES,
+  ROLE_PERMISSIONS,
 } from '../auth/jwt.js';
+import {
+  generateApiKey,
+} from '../auth/apikey.js';
 
 describe('Authentication and Authorization', () => {
-  describe('generateTestToken', () => {
-    test('should generate a valid JWT token', () => {
-      const token = generateTestToken('test-user', [ROLES.ADMIN]);
+  describe('Server JWT Token', () => {
+    test('should generate a valid server token', () => {
+      const token = generateServerToken();
       expect(token).toBeDefined();
       expect(typeof token).toBe('string');
+      expect(token.split('.').length).toBe(3); // JWT has 3 parts
     });
 
-    test('should include required fields', () => {
-      const token = generateTestToken('test-user', [ROLES.ADMIN]);
-      const decoded = verifyToken(token);
-
-      expect(decoded.sub).toBe('test-user');
-      expect(decoded.roles).toContain(ROLES.ADMIN);
-      expect(decoded.permissions).toBeDefined();
-      expect(Array.isArray(decoded.permissions)).toBe(true);
-    });
-  });
-
-  describe('verifyToken', () => {
-    test('should verify valid tokens', () => {
-      const token = generateTestToken('test-user', [ROLES.ADMIN]);
-      const decoded = verifyToken(token);
-
-      expect(decoded.sub).toBe('test-user');
+    test('should verify valid server tokens', () => {
+      const token = generateServerToken();
+      const isValid = verifyServerToken(token);
+      expect(isValid).toBe(true);
     });
 
-    test('should reject invalid tokens', () => {
-      expect(() => verifyToken('invalid-token')).toThrow();
+    test('should reject invalid server tokens', () => {
+      const isValid = verifyServerToken('invalid-token');
+      expect(isValid).toBe(false);
     });
 
-    test('should reject expired tokens', () => {
-      const expiredToken = generateTestToken('test-user', [ROLES.ADMIN], '1ms');
-
-      // Wait for token to expire
-      return new Promise((resolve) => setTimeout(resolve, 100)).then(() => {
-        expect(() => verifyToken(expiredToken)).toThrow('Token has expired');
-      });
+    test('should reject tokens with wrong type', () => {
+      // Create a token with wrong type
+      const jwt = require('jsonwebtoken');
+      const wrongToken = jwt.sign({ type: 'user' }, process.env.JWT_SECRET || 'test-secret');
+      const isValid = verifyServerToken(wrongToken);
+      expect(isValid).toBe(false);
     });
   });
 
-  describe('hasPermission', () => {
-    test('admin should have all permissions', () => {
-      const token = generateTestToken('admin', [ROLES.ADMIN]);
-      const decoded = verifyToken(token);
+  describe('API Keys', () => {
+    test('should generate API keys', () => {
+      const key1 = generateApiKey();
+      const key2 = generateApiKey();
 
-      expect(hasPermission(decoded, PERMISSIONS.PING)).toBe(true);
-      expect(hasPermission(decoded, PERMISSIONS.PORT_SCAN)).toBe(true);
-      expect(hasPermission(decoded, PERMISSIONS.TCPDUMP)).toBe(true);
+      expect(key1).toBeDefined();
+      expect(typeof key1).toBe('string');
+      expect(key1.length).toBe(64); // 32 bytes * 2 (hex)
+      expect(key1).not.toBe(key2); // Keys should be unique
     });
 
-    test('developer should have limited permissions', () => {
-      const token = generateTestToken('dev', [ROLES.DEVELOPER]);
-      const decoded = verifyToken(token);
-
-      expect(hasPermission(decoded, PERMISSIONS.PING)).toBe(true);
-      expect(hasPermission(decoded, PERMISSIONS.API_TEST)).toBe(true);
-      expect(hasPermission(decoded, PERMISSIONS.PORT_SCAN)).toBe(false);
-      expect(hasPermission(decoded, PERMISSIONS.TCPDUMP)).toBe(false);
-    });
-
-    test('readonly should have minimal permissions', () => {
-      const token = generateTestToken('readonly', [ROLES.READONLY]);
-      const decoded = verifyToken(token);
-
-      expect(hasPermission(decoded, PERMISSIONS.PING)).toBe(true);
-      expect(hasPermission(decoded, PERMISSIONS.DNS)).toBe(true);
-      expect(hasPermission(decoded, PERMISSIONS.PORT_SCAN)).toBe(false);
+    test('API keys should be valid hex strings', () => {
+      const key = generateApiKey();
+      expect(/^[0-9a-f]{64}$/.test(key)).toBe(true);
     });
   });
 
-  describe('hasRole', () => {
-    test('should correctly identify roles', () => {
-      const token = generateTestToken('user', [ROLES.NETWORK_ENGINEER]);
-      const decoded = verifyToken(token);
-
-      expect(hasRole(decoded, ROLES.NETWORK_ENGINEER)).toBe(true);
-      expect(hasRole(decoded, ROLES.ADMIN)).toBe(false);
+  describe('RBAC Permissions', () => {
+    test('admin role should have all permissions', () => {
+      const adminPerms = ROLE_PERMISSIONS[ROLES.ADMIN];
+      expect(adminPerms).toContain(PERMISSIONS.PING);
+      expect(adminPerms).toContain(PERMISSIONS.PORT_SCAN);
+      expect(adminPerms).toContain(PERMISSIONS.TCPDUMP);
+      expect(adminPerms).toContain(PERMISSIONS.API_TEST);
     });
 
-    test('should support multiple roles', () => {
-      const token = generateTestToken('user', [ROLES.DEVELOPER, ROLES.AUDITOR]);
-      const decoded = verifyToken(token);
+    test('developer role should have limited permissions', () => {
+      const devPerms = ROLE_PERMISSIONS[ROLES.DEVELOPER];
+      expect(devPerms).toContain(PERMISSIONS.PING);
+      expect(devPerms).toContain(PERMISSIONS.API_TEST);
+      expect(devPerms).not.toContain(PERMISSIONS.PORT_SCAN);
+      expect(devPerms).not.toContain(PERMISSIONS.TCPDUMP);
+    });
 
-      expect(hasRole(decoded, ROLES.DEVELOPER)).toBe(true);
-      expect(hasRole(decoded, ROLES.AUDITOR)).toBe(true);
-      expect(hasRole(decoded, ROLES.ADMIN)).toBe(false);
+    test('readonly role should have minimal permissions', () => {
+      const readonlyPerms = ROLE_PERMISSIONS[ROLES.READONLY];
+      expect(readonlyPerms).toContain(PERMISSIONS.PING);
+      expect(readonlyPerms).toContain(PERMISSIONS.DNS);
+      expect(readonlyPerms).not.toContain(PERMISSIONS.PORT_SCAN);
+    });
+
+    test('network_engineer role should have network diagnostic permissions', () => {
+      const netEngPerms = ROLE_PERMISSIONS[ROLES.NETWORK_ENGINEER];
+      expect(netEngPerms).toContain(PERMISSIONS.PING);
+      expect(netEngPerms).toContain(PERMISSIONS.TRACEROUTE);
+      expect(netEngPerms).toContain(PERMISSIONS.PORT_SCAN);
+      expect(netEngPerms).toContain(PERMISSIONS.TCPDUMP);
+    });
+
+    test('auditor role should have read-only network permissions', () => {
+      const auditorPerms = ROLE_PERMISSIONS[ROLES.AUDITOR];
+      expect(auditorPerms).toContain(PERMISSIONS.PING);
+      expect(auditorPerms).toContain(PERMISSIONS.DNS);
+      expect(auditorPerms).toContain(PERMISSIONS.WHOIS);
+      expect(auditorPerms).not.toContain(PERMISSIONS.PORT_SCAN);
+      expect(auditorPerms).not.toContain(PERMISSIONS.TCPDUMP);
+    });
+  });
+
+  describe('Roles Configuration', () => {
+    test('all required roles should be defined', () => {
+      expect(ROLES.ADMIN).toBeDefined();
+      expect(ROLES.NETWORK_ENGINEER).toBeDefined();
+      expect(ROLES.DEVELOPER).toBeDefined();
+      expect(ROLES.AUDITOR).toBeDefined();
+      expect(ROLES.READONLY).toBeDefined();
+    });
+
+    test('all permissions should be defined', () => {
+      expect(PERMISSIONS.PING).toBeDefined();
+      expect(PERMISSIONS.TRACEROUTE).toBeDefined();
+      expect(PERMISSIONS.DNS).toBeDefined();
+      expect(PERMISSIONS.WHOIS).toBeDefined();
+      expect(PERMISSIONS.PORT_SCAN).toBeDefined();
+      expect(PERMISSIONS.PORT_TEST).toBeDefined();
+      expect(PERMISSIONS.IP_ADDRESS).toBeDefined();
+      expect(PERMISSIONS.API_TEST).toBeDefined();
+      expect(PERMISSIONS.TLS_TEST).toBeDefined();
+      expect(PERMISSIONS.TCPDUMP).toBeDefined();
+      expect(PERMISSIONS.IPERF).toBeDefined();
+      expect(PERMISSIONS.LETSENCRYPT).toBeDefined();
     });
   });
 });

@@ -10,6 +10,12 @@ export default {
       'ts-jest',
       {
         useESM: true,
+        tsconfig: {
+          module: 'ES2022',
+        },
+        diagnostics: {
+          ignoreCodes: [151002],
+        },
       },
     ],
   },

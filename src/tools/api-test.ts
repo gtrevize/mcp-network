@@ -5,6 +5,7 @@ import axios, { AxiosRequestConfig } from 'axios';
 import { ApiTestOptions, ToolResult } from '../types/index.js';
 import { validateUrl, validateTimeout } from '../middleware/validation.js';
 import { logger } from '../logger/index.js';
+import { validateApiTestResponse } from '../utils/output-validator.js';
 
 const DEFAULT_TIMEOUT = 30000;
 const MAX_TIMEOUT = 120000;
@@ -47,6 +48,29 @@ export async function testApi(options: ApiTestOptions): Promise<ToolResult> {
     const requestStart = Date.now();
     const response = await axios(config);
     const requestTime = Date.now() - requestStart;
+
+    // Validate API response structure
+    const validation = validateApiTestResponse({
+      status: response.status,
+      responseTime: requestTime,
+      headers: response.headers,
+      body: response.data,
+    });
+
+    if (!validation.valid) {
+      logger.warn({ errors: validation.errors, warnings: validation.warnings }, 'API response validation failed');
+      return {
+        success: false,
+        error: `Invalid API response: ${validation.errors.join(', ')}`,
+        executionTime: Date.now() - startTime,
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    // Log warnings if any
+    if (validation.warnings.length > 0) {
+      logger.warn({ warnings: validation.warnings }, 'API response validation warnings');
+    }
 
     // Check expected status
     const statusMatch = options.expectedStatus

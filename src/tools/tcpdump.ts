@@ -6,8 +6,9 @@ import { unlink } from 'fs/promises';
 import { randomBytes } from 'crypto';
 import { TcpdumpOptions, ToolResult } from '../types/index.js';
 import { logger } from '../logger/index.js';
-import { commandExists, compressData } from '../utils/helpers.js';
+import { compressData } from '../utils/helpers.js';
 import { readFile } from 'fs/promises';
+import { checkToolAvailability, getTcpdumpCommand } from '../utils/platform.js';
 
 const DEFAULT_DURATION = 10; // seconds
 const MAX_DURATION = 300; // 5 minutes
@@ -19,15 +20,18 @@ export async function captureTcpdump(options: TcpdumpOptions): Promise<ToolResul
   const captureFile = `/tmp/tcpdump_${Date.now()}_${randomBytes(4).toString('hex')}.pcap`;
 
   try {
-    // Check if tcpdump is installed
-    if (!(await commandExists('tcpdump'))) {
+    // Sanity check: verify tcpdump is available
+    const toolCheck = checkToolAvailability('tcpdump');
+    if (!toolCheck.available) {
       return {
         success: false,
-        error: 'tcpdump is not installed on this system',
+        error: `${toolCheck.message}. ${toolCheck.installHint || ''}`,
         executionTime: Date.now() - startTime,
         timestamp: new Date().toISOString(),
       };
     }
+
+    const tcpdumpCmd = getTcpdumpCommand();
 
     const duration = Math.min(options.duration || DEFAULT_DURATION, MAX_DURATION);
     const maxSize = Math.min(options.maxSize || DEFAULT_MAX_SIZE, MAX_MAX_SIZE);
@@ -40,6 +44,7 @@ export async function captureTcpdump(options: TcpdumpOptions): Promise<ToolResul
     );
 
     await capturePackets(
+      tcpdumpCmd,
       captureFile,
       duration,
       maxSize,
@@ -96,6 +101,7 @@ export async function captureTcpdump(options: TcpdumpOptions): Promise<ToolResul
 }
 
 function capturePackets(
+  command: string,
   outputFile: string,
   duration: number,
   maxSize: number,
@@ -122,9 +128,9 @@ function capturePackets(
       args.push(...filter.split(' '));
     }
 
-    logger.info({ args }, 'Starting tcpdump');
+    logger.info({ command, args }, 'Starting tcpdump');
 
-    const proc = spawn('tcpdump', args, {
+    const proc = spawn(command, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 

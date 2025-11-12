@@ -14,9 +14,12 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 
 import { logger, AccessLogger } from './logger/index.js';
-import { verifyToken, hasPermission, PERMISSIONS } from './auth/jwt.js';
+import { verifyServerToken, PERMISSIONS, ROLE_PERMISSIONS } from './auth/jwt.js';
+import { validateApiKey } from './auth/apikey.js';
 import { generateRequestId } from './utils/helpers.js';
 import { ToolExecutionContext } from './types/index.js';
+import { validateConfig, getConfig } from './config/loader.js';
+import { validateNetworkTools, logStartupValidation } from './utils/startup-validator.js';
 
 // Import all tools
 import { ping } from './tools/ping.js';
@@ -34,6 +37,9 @@ import { getIpAddress } from './tools/ip-address.js';
 
 const SERVER_NAME = 'mcp-network';
 const SERVER_VERSION = '1.0.0';
+
+// Global set of available tools (populated at startup)
+let AVAILABLE_TOOLS = new Set<string>();
 
 /**
  * Tool definitions for MCP
@@ -165,13 +171,13 @@ const TOOLS: Tool[] = [
   },
   {
     name: 'test_api',
-    description: 'Test an HTTP/HTTPS API endpoint (Postman-style testing)',
+    description: 'Test an HTTP/HTTPS API endpoint (Postman-style testing). For httpbin.org testing, use method-specific endpoints: GET→/get, POST→/post, PUT→/put, DELETE→/delete. Example: https://httpbin.org/post for POST requests.',
     inputSchema: {
       type: 'object',
       properties: {
         url: {
           type: 'string',
-          description: 'The API endpoint URL',
+          description: 'The API endpoint URL (e.g., https://httpbin.org/post for POST, https://httpbin.org/get for GET)',
         },
         method: {
           type: 'string',
@@ -330,18 +336,18 @@ const TOOLS: Tool[] = [
   },
   {
     name: 'iperf',
-    description: 'Run iPerf3 network bandwidth test as client or server',
+    description: 'Run iPerf3 network bandwidth test as client or server. For client mode, use reliable public servers like: speedtest.wtnet.de, ping.online.net, iperf.he.net, or run your own server. Note: Public servers are often busy; retry if needed.',
     inputSchema: {
       type: 'object',
       properties: {
         mode: {
           type: 'string',
           enum: ['client', 'server', 'both'],
-          description: 'Operation mode',
+          description: 'Operation mode (use "server" to create a test server, "client" to connect to a server)',
         },
         serverHost: {
           type: 'string',
-          description: 'Server hostname (required for client mode)',
+          description: 'Server hostname/IP (required for client mode). Examples: speedtest.wtnet.de, ping.online.net, iperf.he.net',
         },
         port: {
           type: 'number',
@@ -397,21 +403,39 @@ const TOOL_PERMISSIONS: Record<string, string> = {
 };
 
 /**
- * Extract and verify JWT token from request
+ * Extract and verify authentication (JWT + API Key)
  */
 function extractAuthContext(_request: any): ToolExecutionContext {
-  const token = process.env.MCP_AUTH_TOKEN;
+  // Step 1: Verify server JWT token
+  const serverToken = process.env.MCP_AUTH_TOKEN || process.env.JWT_SERVER_TOKEN;
 
-  if (!token) {
-    throw new Error('Authentication required: MCP_AUTH_TOKEN not provided');
+  if (!serverToken) {
+    throw new Error('Authentication required: Server JWT token not provided (set MCP_AUTH_TOKEN or JWT_SERVER_TOKEN)');
   }
 
-  const authToken = verifyToken(token);
+  const isValidServerToken = verifyServerToken(serverToken);
+  if (!isValidServerToken) {
+    throw new Error('Invalid server JWT token - connection rejected');
+  }
+
+  // Step 2: Validate API key for user authentication
+  const apiKey = process.env.MCP_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('API key required: Set MCP_API_KEY environment variable');
+  }
+
+  const apiKeyInfo = validateApiKey(apiKey);
+  if (!apiKeyInfo) {
+    throw new Error('Invalid or disabled API key');
+  }
+
+  logger.debug({ userId: apiKeyInfo.userId, roles: apiKeyInfo.roles }, 'User authenticated');
 
   return {
-    userId: authToken.sub,
-    roles: authToken.roles,
-    permissions: authToken.permissions,
+    userId: apiKeyInfo.userId,
+    roles: apiKeyInfo.roles,
+    permissions: apiKeyInfo.roles.flatMap(role => ROLE_PERMISSIONS[role] || []),
     timestamp: Date.now(),
     requestId: generateRequestId(),
   };
@@ -428,15 +452,23 @@ async function executeTool(
   const startTime = Date.now();
 
   try {
+    // Check if tool is available
+    if (!AVAILABLE_TOOLS.has(toolName)) {
+      throw new Error(`Tool '${toolName}' is not available on this system`);
+    }
+
     // Check permission
     const requiredPermission = TOOL_PERMISSIONS[toolName];
     if (!requiredPermission) {
       throw new Error(`Unknown tool: ${toolName}`);
     }
 
-    const authToken = verifyToken(process.env.MCP_AUTH_TOKEN!);
-    if (!hasPermission(authToken, requiredPermission)) {
-      throw new Error(`Permission denied: ${requiredPermission} required`);
+    // Check if user has the required permission
+    if (!context.permissions.includes(requiredPermission)) {
+      // Check if user has admin role (bypass permission check)
+      if (!context.roles.includes('admin')) {
+        throw new Error(`Permission denied: ${requiredPermission} required for ${toolName}`);
+      }
     }
 
     // Execute the tool
@@ -520,6 +552,29 @@ async function executeTool(
 async function main() {
   logger.info(`Starting ${SERVER_NAME} v${SERVER_VERSION}`);
 
+  // Validate configuration
+  const configValidation = validateConfig();
+  if (!configValidation.valid) {
+    logger.error('Configuration validation failed:');
+    configValidation.errors.forEach(error => logger.error(`  - ${error}`));
+    logger.error('\nPlease update .env or config.json and ensure all CHANGEME values are replaced');
+    logger.error('Copy .env.sample to .env and update the values');
+    process.exit(1);
+  }
+
+  const config = getConfig();
+  logger.info('Configuration loaded successfully');
+  logger.debug({ config: { ...config, jwt: { secret: '***' } } }, 'Configuration details');
+
+  // Validate network tools availability
+  logger.info('Checking network tool availability...');
+  const toolValidation = validateNetworkTools();
+  AVAILABLE_TOOLS = toolValidation.availableTools;
+  logStartupValidation(toolValidation);
+
+  // Filter tools list to only include available tools
+  const availableToolsList = TOOLS.filter(tool => AVAILABLE_TOOLS.has(tool.name));
+
   // Create MCP server
   const server = new Server(
     {
@@ -536,7 +591,7 @@ async function main() {
   // List tools handler
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     logger.debug('Listing tools');
-    return { tools: TOOLS };
+    return { tools: availableToolsList };
   });
 
   // Call tool handler

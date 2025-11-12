@@ -5,7 +5,8 @@ import { spawn } from 'child_process';
 import { IperfOptions, ToolResult } from '../types/index.js';
 import { validateHost, validatePort } from '../middleware/validation.js';
 import { logger } from '../logger/index.js';
-import { commandExists } from '../utils/helpers.js';
+import { checkToolAvailability } from '../utils/platform.js';
+import { validateIperfResults } from '../utils/output-validator.js';
 
 const DEFAULT_PORT = 5201;
 const DEFAULT_DURATION = 10;
@@ -15,15 +16,18 @@ export async function runIperf(options: IperfOptions): Promise<ToolResult> {
   const startTime = Date.now();
 
   try {
-    // Check if iperf3 is installed
-    if (!(await commandExists('iperf3'))) {
+    // Sanity check: verify iperf/iperf3 is available
+    const toolCheck = checkToolAvailability('iperf');
+    if (!toolCheck.available) {
       return {
         success: false,
-        error: 'iperf3 is not installed on this system',
+        error: `${toolCheck.message}. ${toolCheck.installHint || ''}`,
         executionTime: Date.now() - startTime,
         timestamp: new Date().toISOString(),
       };
     }
+
+    const iperfCmd = toolCheck.command; // Use iperf3 or iperf depending on what's available
 
     const mode = options.mode || 'client';
     const port = options.port || DEFAULT_PORT;
@@ -46,7 +50,7 @@ export async function runIperf(options: IperfOptions): Promise<ToolResult> {
     let result;
     switch (mode) {
       case 'server':
-        result = await runIperfServer(port, duration * 1000 + 10000);
+        result = await runIperfServer(iperfCmd, port, duration * 1000 + 10000);
         break;
       case 'client':
         if (!options.serverHost) {
@@ -67,6 +71,7 @@ export async function runIperf(options: IperfOptions): Promise<ToolResult> {
           };
         }
         result = await runIperfClient(
+          iperfCmd,
           hostValidation.sanitized!,
           port,
           duration,
@@ -91,6 +96,23 @@ export async function runIperf(options: IperfOptions): Promise<ToolResult> {
         };
     }
 
+    // Validate iPerf results
+    const validation = validateIperfResults(result);
+    if (!validation.valid) {
+      logger.warn({ errors: validation.errors, warnings: validation.warnings, result }, 'iPerf results validation failed');
+      return {
+        success: false,
+        error: `Invalid iPerf results: ${validation.errors.join(', ')}`,
+        executionTime: Date.now() - startTime,
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    // Log warnings if any
+    if (validation.warnings.length > 0) {
+      logger.warn({ warnings: validation.warnings, result }, 'iPerf results validation warnings');
+    }
+
     return {
       success: true,
       data: result,
@@ -108,13 +130,13 @@ export async function runIperf(options: IperfOptions): Promise<ToolResult> {
   }
 }
 
-function runIperfServer(port: number, timeout: number): Promise<any> {
+function runIperfServer(command: string, port: number, timeout: number): Promise<any> {
   return new Promise((resolve, reject) => {
     const args = ['-s', '-p', port.toString(), '-1', '-J']; // -1 = exit after one client, -J = JSON output
 
-    logger.info({ args }, 'Starting iPerf3 server');
+    logger.info({ command, args }, 'Starting iPerf server');
 
-    const proc = spawn('iperf3', args);
+    const proc = spawn(command, args);
     let output = '';
     let errorOutput = '';
 
@@ -164,6 +186,7 @@ function runIperfServer(port: number, timeout: number): Promise<any> {
 }
 
 function runIperfClient(
+  command: string,
   host: string,
   port: number,
   duration: number,
@@ -193,9 +216,9 @@ function runIperfClient(
       args.push('-P', parallel.toString());
     }
 
-    logger.info({ args }, 'Starting iPerf3 client');
+    logger.info({ command, args }, 'Starting iPerf client');
 
-    const proc = spawn('iperf3', args);
+    const proc = spawn(command, args);
     let output = '';
     let errorOutput = '';
 
@@ -238,7 +261,22 @@ function runIperfClient(
           });
         }
       } else {
-        reject(new Error(`iPerf3 client failed: ${errorOutput || 'Unknown error'}`));
+        // Parse error message for better user feedback
+        let errorMsg = errorOutput || 'Unknown error';
+
+        if (errorMsg.includes('unable to connect')) {
+          if (errorMsg.includes('nodename nor servname provided') || errorMsg.includes('not known')) {
+            errorMsg = `Unable to resolve hostname '${host}'. DNS lookup failed. Please check the hostname or try a different server.`;
+          } else {
+            errorMsg = `Unable to connect to ${host}:${port}. Server may be offline, firewalled, or the port may be incorrect.`;
+          }
+        } else if (errorMsg.includes('server is busy')) {
+          errorMsg = `Server ${host} is busy running another test. Try again later or use a different public iperf3 server.`;
+        } else if (errorMsg.includes('Connection refused')) {
+          errorMsg = `Connection refused by ${host}:${port}. Server may not be running or port is incorrect.`;
+        }
+
+        reject(new Error(`iPerf3 client failed: ${errorMsg}`));
       }
     });
 
