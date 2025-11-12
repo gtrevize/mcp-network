@@ -132,8 +132,17 @@ export interface IperfOptions {
 }
 
 export interface IpAddressResult {
-  ipv4?: string;
-  ipv6?: string;
+  message: string;
+  methods: {
+    curl: string;
+    browser: string;
+    api: string;
+  };
+  recommendedServices: {
+    ipv4: string[];
+    ipv6: string[];
+  };
+  note: string;
 }
 
 export interface AccessLog {

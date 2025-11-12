@@ -2,6 +2,18 @@
 
 ## [Unreleased] - 2025-11-11
 
+### Changed
+
+#### get_ip_address Tool Behavior
+- **Previous**: Tool detected and returned the SERVER's public IP address
+- **Issue**: In MCP context, clients want to know THEIR OWN IP, not the server's
+- **Solution**: Changed tool to provide guidance for caller IP detection
+  - Returns recommended services (ipify.org, icanhazip.com, etc.)
+  - Provides multiple detection methods (curl, browser, API)
+  - Includes helpful instructions and notes
+- **Impact**: Tool now helps clients detect their own IP address instead of showing server IP
+- **Rationale**: MCP runs over stdio with no network metadata; this approach is more useful for clients
+
 ### Fixed
 
 #### tcpdump Validation on macOS

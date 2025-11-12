@@ -376,7 +376,7 @@ const TOOLS: Tool[] = [
   },
   {
     name: 'get_ip_address',
-    description: 'Get the public IP address of this server (both IPv4 and IPv6)',
+    description: 'Get methods and services for the caller to detect their own public IP address (IPv4 and IPv6). Returns recommended services and instructions for IP detection.',
     inputSchema: {
       type: 'object',
       properties: {},

@@ -1,7 +1,8 @@
 /**
  * IP address detection tool
+ * NOTE: This tool provides the client with methods to detect their OWN public IP address.
+ * It returns recommended services and instructions rather than detecting server IP.
  */
-import axios from 'axios';
 import { IpAddressResult, ToolResult } from '../types/index.js';
 import { logger } from '../logger/index.js';
 
@@ -21,26 +22,22 @@ export async function getIpAddress(): Promise<ToolResult<IpAddressResult>> {
   const startTime = Date.now();
 
   try {
-    logger.debug('Detecting IP addresses');
+    logger.debug('Providing IP address detection methods for caller');
 
-    const [ipv4, ipv6] = await Promise.allSettled([
-      detectIpv4(),
-      detectIpv6(),
-    ]);
-
+    // Return detection methods and recommended services for the CLIENT to use
     const result: IpAddressResult = {
-      ipv4: ipv4.status === 'fulfilled' ? ipv4.value : undefined,
-      ipv6: ipv6.status === 'fulfilled' ? ipv6.value : undefined,
+      message: 'To detect YOUR public IP address, use one of these methods:',
+      methods: {
+        curl: 'curl https://api.ipify.org',
+        browser: 'Visit https://api.ipify.org or https://ifconfig.me',
+        api: 'Make a GET request to https://api.ipify.org?format=json',
+      },
+      recommendedServices: {
+        ipv4: IPV4_SERVICES,
+        ipv6: IPV6_SERVICES,
+      },
+      note: 'These services will return YOUR IP address when YOU make the request from your location.',
     };
-
-    if (!result.ipv4 && !result.ipv6) {
-      return {
-        success: false,
-        error: 'Failed to detect any IP address',
-        executionTime: Date.now() - startTime,
-        timestamp: new Date().toISOString(),
-      };
-    }
 
     return {
       success: true,
@@ -49,7 +46,7 @@ export async function getIpAddress(): Promise<ToolResult<IpAddressResult>> {
       timestamp: new Date().toISOString(),
     };
   } catch (error: any) {
-    logger.error({ error: error.message }, 'IP address detection failed');
+    logger.error({ error: error.message }, 'IP address info failed');
     return {
       success: false,
       error: error.message,
@@ -59,67 +56,4 @@ export async function getIpAddress(): Promise<ToolResult<IpAddressResult>> {
   }
 }
 
-async function detectIpv4(): Promise<string> {
-  for (const service of IPV4_SERVICES) {
-    try {
-      const response = await axios.get(service, {
-        timeout: 5000,
-        headers: { 'User-Agent': 'mcp-network/1.0' },
-      });
-
-      const ip = typeof response.data === 'string'
-        ? response.data.trim()
-        : response.data.ip;
-
-      if (ip && isValidIpv4(ip)) {
-        return ip;
-      }
-    } catch (error) {
-      logger.debug({ service, error }, 'IPv4 detection service failed');
-      continue;
-    }
-  }
-
-  throw new Error('Failed to detect IPv4 address');
-}
-
-async function detectIpv6(): Promise<string> {
-  for (const service of IPV6_SERVICES) {
-    try {
-      const response = await axios.get(service, {
-        timeout: 5000,
-        headers: { 'User-Agent': 'mcp-network/1.0' },
-      });
-
-      const ip = typeof response.data === 'string'
-        ? response.data.trim()
-        : response.data.ip;
-
-      if (ip && isValidIpv6(ip)) {
-        return ip;
-      }
-    } catch (error) {
-      logger.debug({ service, error }, 'IPv6 detection service failed');
-      continue;
-    }
-  }
-
-  throw new Error('Failed to detect IPv6 address');
-}
-
-function isValidIpv4(ip: string): boolean {
-  const regex = /^(\d{1,3}\.){3}\d{1,3}$/;
-  if (!regex.test(ip)) return false;
-
-  const parts = ip.split('.');
-  return parts.every(part => {
-    const num = parseInt(part);
-    return num >= 0 && num <= 255;
-  });
-}
-
-function isValidIpv6(ip: string): boolean {
-  const regex = /^([\da-f]{1,4}:){7}[\da-f]{1,4}$/i;
-  const regexCompressed = /^([\da-f]{0,4}:){2,7}[\da-f]{0,4}$/i;
-  return regex.test(ip) || regexCompressed.test(ip);
-}
+// Helper functions removed - tool now provides guidance instead of detecting IPs
