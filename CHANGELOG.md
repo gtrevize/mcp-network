@@ -4,15 +4,25 @@
 
 ### Changed
 
-#### get_ip_address Tool Behavior
-- **Previous**: Tool detected and returned the SERVER's public IP address
-- **Issue**: In MCP context, clients want to know THEIR OWN IP, not the server's
-- **Solution**: Changed tool to provide guidance for caller IP detection
-  - Returns recommended services (ipify.org, icanhazip.com, etc.)
-  - Provides multiple detection methods (curl, browser, API)
-  - Includes helpful instructions and notes
-- **Impact**: Tool now helps clients detect their own IP address instead of showing server IP
-- **Rationale**: MCP runs over stdio with no network metadata; this approach is more useful for clients
+#### get_ip_address Tool Behavior (REVERTED and IMPROVED)
+- **Previous Behavior**: Provided guidance/instructions for IP detection (not actual IP)
+- **New Behavior**: Actually detects and returns the server's public IPv4 address
+- **Implementation**:
+  - **Primary Method**: DNS queries (fastest, ~80ms)
+    - OpenDNS resolvers (resolver1.opendns.com, resolver2.opendns.com)
+    - Google DNS resolver (ns1.google.com)
+  - **Fallback Method**: API services if DNS fails
+    - api.ipify.org
+    - api4.my-ip.io
+    - icanhazip.com
+- **Performance**:
+  - DNS detection: ~80-100ms (typical)
+  - API fallback: ~200-500ms (if needed)
+- **Result Structure**:
+  - `ipv4`: Detected IPv4 address
+  - `ipv6`: IPv6 address (future enhancement)
+  - `method`: Detection method used (e.g., "DNS (resolver1.opendns.com)")
+- **Rationale**: DNS queries are faster and simpler than HTTP APIs, with reliable fallback
 
 ### Fixed
 

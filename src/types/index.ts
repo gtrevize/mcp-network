@@ -132,17 +132,9 @@ export interface IperfOptions {
 }
 
 export interface IpAddressResult {
-  message: string;
-  methods: {
-    curl: string;
-    browser: string;
-    api: string;
-  };
-  recommendedServices: {
-    ipv4: string[];
-    ipv6: string[];
-  };
-  note: string;
+  ipv4?: string;
+  ipv6?: string;
+  method: string; // DNS or API service name that provided the result
 }
 
 export interface IpGeolocationOptions {
