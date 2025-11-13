@@ -156,8 +156,11 @@ export class ParameterPrompts {
   }
 
   static async selectTool(tools: Array<{ name: string; description?: string }>): Promise<string | null> {
+    // Sort tools alphabetically by name
+    const sortedTools = [...tools].sort((a, b) => a.name.localeCompare(b.name));
+
     const choices = [
-      ...tools.map(tool => ({
+      ...sortedTools.map(tool => ({
         name: chalk.green(tool.name) + (tool.description ? chalk.gray(' - ' + tool.description) : ''),
         value: tool.name,
         short: tool.name

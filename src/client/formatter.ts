@@ -124,7 +124,10 @@ export class ResultFormatter {
       borderColor: 'blue'
     }));
 
-    tools.forEach((tool, index) => {
+    // Sort tools alphabetically by name
+    const sortedTools = [...tools].sort((a, b) => a.name.localeCompare(b.name));
+
+    sortedTools.forEach((tool, index) => {
       console.log(
         chalk.yellow(`${index + 1}.`) + ' ' +
         chalk.green.bold(tool.name) +
