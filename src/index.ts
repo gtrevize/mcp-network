@@ -35,6 +35,7 @@ import { captureTcpdump } from './tools/tcpdump.js';
 import { runIperf } from './tools/iperf.js';
 import { getIpAddress } from './tools/ip-address.js';
 import { getIpGeolocation } from './tools/ip-geolocation.js';
+import { reverseDnsLookup } from './tools/reverse-dns.js';
 
 const SERVER_NAME = 'mcp-network';
 const SERVER_VERSION = '1.0.0';
@@ -401,6 +402,24 @@ const TOOLS: Tool[] = [
       required: ['ip'],
     },
   },
+  {
+    name: 'reverse_dns',
+    description: 'Perform reverse DNS lookup (PTR record query) to find hostnames associated with an IP address. Returns all PTR records found.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        ip: {
+          type: 'string',
+          description: 'The IP address to reverse lookup (IPv4 or IPv6)',
+        },
+        timeout: {
+          type: 'number',
+          description: 'Timeout in milliseconds (default: 10000, max: 30000)',
+        },
+      },
+      required: ['ip'],
+    },
+  },
 ];
 
 /**
@@ -420,6 +439,7 @@ const TOOL_PERMISSIONS: Record<string, string> = {
   iperf: PERMISSIONS.IPERF,
   get_ip_address: PERMISSIONS.IP_ADDRESS,
   ip_geolocation: PERMISSIONS.IP_GEOLOCATION,
+  reverse_dns: PERMISSIONS.REVERSE_DNS,
 };
 
 /**
@@ -532,6 +552,9 @@ async function executeTool(
         break;
       case 'ip_geolocation':
         result = await getIpGeolocation(args as any);
+        break;
+      case 'reverse_dns':
+        result = await reverseDnsLookup(args as any);
         break;
       default:
         throw new Error(`Tool not implemented: ${toolName}`);

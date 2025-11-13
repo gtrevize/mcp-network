@@ -59,6 +59,7 @@ export const PERMISSIONS = {
   IPERF: 'network:iperf',
   IP_ADDRESS: 'network:ip_address',
   IP_GEOLOCATION: 'network:ip_geolocation',
+  REVERSE_DNS: 'network:reverse_dns',
   VPN_TEST: 'network:vpn_test',
 } as const;
 
@@ -91,6 +92,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     PERMISSIONS.IPERF,
     PERMISSIONS.IP_ADDRESS,
     PERMISSIONS.IP_GEOLOCATION,
+    PERMISSIONS.REVERSE_DNS,
   ],
   [ROLES.DEVELOPER]: [
     PERMISSIONS.PING,
@@ -100,6 +102,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     PERMISSIONS.TLS_TEST,
     PERMISSIONS.IP_ADDRESS,
     PERMISSIONS.IP_GEOLOCATION,
+    PERMISSIONS.REVERSE_DNS,
   ],
   [ROLES.AUDITOR]: [
     PERMISSIONS.PING,
@@ -110,12 +113,14 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     PERMISSIONS.TLS_TEST,
     PERMISSIONS.IP_ADDRESS,
     PERMISSIONS.IP_GEOLOCATION,
+    PERMISSIONS.REVERSE_DNS,
   ],
   [ROLES.READONLY]: [
     PERMISSIONS.PING,
     PERMISSIONS.DNS,
     PERMISSIONS.IP_ADDRESS,
     PERMISSIONS.IP_GEOLOCATION,
+    PERMISSIONS.REVERSE_DNS,
   ],
 };
 

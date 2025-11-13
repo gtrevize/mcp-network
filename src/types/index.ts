@@ -161,6 +161,17 @@ export interface IpGeolocationResult {
   source: string; // Which service provided the data
 }
 
+export interface ReverseDnsOptions {
+  ip: string;
+  timeout?: number;
+}
+
+export interface ReverseDnsResult {
+  ip: string;
+  hostnames: string[];
+  ptrRecord?: string; // The PTR record queried
+}
+
 export interface AccessLog {
   timestamp: string;
   requestId: string;

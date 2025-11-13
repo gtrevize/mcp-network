@@ -72,6 +72,32 @@
 
 ### Added
 
+#### Reverse DNS Lookup Tool (`reverse_dns`)
+- **Feature**: New tool for performing reverse DNS lookups (PTR record queries)
+- **Implementation**:
+  - Uses `dig -x` command for automatic PTR record resolution
+  - Supports both IPv4 and IPv6 addresses
+  - Returns all hostnames associated with an IP address
+  - Provides the PTR record name for reference (in-addr.arpa format)
+- **Performance**:
+  - Typical execution time: 25-100ms for local/private IPs
+  - Public IPs: 70-1200ms depending on DNS server response
+- **Use Cases**:
+  - Verify server hostnames from IP addresses
+  - Investigate network connections
+  - Validate reverse DNS configuration
+  - Security and forensic analysis
+- **Permissions**:
+  - Added `network:reverse_dns` permission
+  - Available to all roles (admin, network_engineer, developer, auditor, readonly)
+- **Testing**:
+  - Tested with Google DNS (8.8.8.8)
+  - Tested with Cloudflare DNS (1.1.1.1) - returns "one.one.one.one"
+  - Tested with private IPs (192.168.1.1) - correctly returns empty hostnames
+- **Files**:
+  - `src/tools/reverse-dns.ts`: Tool implementation
+  - `src/types/index.ts`: ReverseDnsOptions and ReverseDnsResult interfaces
+
 #### IP Geolocation Tool (`ip_geolocation`)
 - **Feature**: New tool for retrieving geolocation information for IP addresses
 - **Implementation**:
