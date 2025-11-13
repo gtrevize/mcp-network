@@ -114,6 +114,8 @@ export function validateNetworkTools(): StartupValidationResult {
     'test_api',
     'test_tls',
     'get_ip_address',
+    'ip_geolocation',
+    'reverse_dns',
     'letsencrypt',
   ];
 
