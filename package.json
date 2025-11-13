@@ -46,6 +46,7 @@
     "axios": "^1.7.9",
     "boxen": "^8.0.1",
     "chalk": "^5.6.2",
+    "cheerio": "^1.1.2",
     "cli-table3": "^0.6.5",
     "commander": "^12.1.0",
     "dotenv": "^17.2.3",

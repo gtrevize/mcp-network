@@ -145,6 +145,30 @@ export interface IpAddressResult {
   note: string;
 }
 
+export interface IpGeolocationOptions {
+  ip: string;
+  timeout?: number;
+}
+
+export interface IpGeolocationResult {
+  ip: string;
+  country?: string;
+  countryCode?: string;
+  region?: string;
+  regionName?: string;
+  city?: string;
+  zip?: string;
+  latitude?: number;
+  longitude?: number;
+  timezone?: string;
+  isp?: string;
+  org?: string;
+  as?: string;
+  query?: string;
+  status?: string;
+  source: string; // Which service provided the data
+}
+
 export interface AccessLog {
   timestamp: string;
   requestId: string;

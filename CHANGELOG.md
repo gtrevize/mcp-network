@@ -62,6 +62,37 @@
 
 ### Added
 
+#### IP Geolocation Tool (`ip_geolocation`)
+- **Feature**: New tool for retrieving geolocation information for IP addresses
+- **Implementation**:
+  - Multiple API service fallbacks for reliability:
+    - Primary: ip-api.com (free, comprehensive data)
+    - Secondary: ipapi.co (alternative JSON API)
+    - Tertiary: ipwhois.app (backup service)
+  - Web scraping fallback if all APIs fail (iplocation.net)
+  - Returns comprehensive geolocation data:
+    - Country, region, city information
+    - Geographic coordinates (latitude/longitude)
+    - Timezone information
+    - ISP and organization details
+    - AS number
+- **Security**:
+  - Full input validation through existing validateHost()
+  - Protection against malicious inputs
+  - Configurable timeout (default 10s, max 30s)
+- **Permissions**:
+  - Added `network:ip_geolocation` permission
+  - Available to all roles (admin, network_engineer, developer, auditor, readonly)
+- **Testing**:
+  - Comprehensive test suite with 12 tests
+  - Mocked API responses for reliable testing
+  - Input validation coverage
+  - Error handling verification
+- **Files**:
+  - `src/tools/ip-geolocation.ts`: Tool implementation
+  - `src/types/index.ts`: IpGeolocationOptions and IpGeolocationResult interfaces
+  - `src/__tests__/ip-geolocation.test.ts`: Test suite
+
 #### Integration Tests
 - **File**: `src/__tests__/integration.test.ts`
 - **Coverage**:

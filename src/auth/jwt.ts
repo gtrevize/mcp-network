@@ -58,6 +58,7 @@ export const PERMISSIONS = {
   TCPDUMP: 'network:tcpdump',
   IPERF: 'network:iperf',
   IP_ADDRESS: 'network:ip_address',
+  IP_GEOLOCATION: 'network:ip_geolocation',
   VPN_TEST: 'network:vpn_test',
 } as const;
 
@@ -89,6 +90,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     PERMISSIONS.TCPDUMP,
     PERMISSIONS.IPERF,
     PERMISSIONS.IP_ADDRESS,
+    PERMISSIONS.IP_GEOLOCATION,
   ],
   [ROLES.DEVELOPER]: [
     PERMISSIONS.PING,
@@ -97,6 +99,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     PERMISSIONS.API_TEST,
     PERMISSIONS.TLS_TEST,
     PERMISSIONS.IP_ADDRESS,
+    PERMISSIONS.IP_GEOLOCATION,
   ],
   [ROLES.AUDITOR]: [
     PERMISSIONS.PING,
@@ -106,11 +109,13 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     PERMISSIONS.DNS,
     PERMISSIONS.TLS_TEST,
     PERMISSIONS.IP_ADDRESS,
+    PERMISSIONS.IP_GEOLOCATION,
   ],
   [ROLES.READONLY]: [
     PERMISSIONS.PING,
     PERMISSIONS.DNS,
     PERMISSIONS.IP_ADDRESS,
+    PERMISSIONS.IP_GEOLOCATION,
   ],
 };
 

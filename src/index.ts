@@ -34,6 +34,7 @@ import { manageLetsEncrypt } from './tools/letsencrypt.js';
 import { captureTcpdump } from './tools/tcpdump.js';
 import { runIperf } from './tools/iperf.js';
 import { getIpAddress } from './tools/ip-address.js';
+import { getIpGeolocation } from './tools/ip-geolocation.js';
 
 const SERVER_NAME = 'mcp-network';
 const SERVER_VERSION = '1.0.0';
@@ -382,6 +383,24 @@ const TOOLS: Tool[] = [
       properties: {},
     },
   },
+  {
+    name: 'ip_geolocation',
+    description: 'Get geolocation information for an IP address including country, city, coordinates, ISP, and timezone. Uses multiple public APIs with web scraping fallback.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        ip: {
+          type: 'string',
+          description: 'The IP address to look up (IPv4 or IPv6)',
+        },
+        timeout: {
+          type: 'number',
+          description: 'Timeout in milliseconds (default: 10000, max: 30000)',
+        },
+      },
+      required: ['ip'],
+    },
+  },
 ];
 
 /**
@@ -400,6 +419,7 @@ const TOOL_PERMISSIONS: Record<string, string> = {
   tcpdump: PERMISSIONS.TCPDUMP,
   iperf: PERMISSIONS.IPERF,
   get_ip_address: PERMISSIONS.IP_ADDRESS,
+  ip_geolocation: PERMISSIONS.IP_GEOLOCATION,
 };
 
 /**
@@ -509,6 +529,9 @@ async function executeTool(
         break;
       case 'get_ip_address':
         result = await getIpAddress();
+        break;
+      case 'ip_geolocation':
+        result = await getIpGeolocation(args as any);
         break;
       default:
         throw new Error(`Tool not implemented: ${toolName}`);
