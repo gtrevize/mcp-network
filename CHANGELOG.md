@@ -1,6 +1,24 @@
 # Changelog
 
-## [Unreleased] - 2025-11-11
+## [Unreleased] - 2025-11-13
+
+### Fixed
+
+#### Startup Validator Missing New Tools
+- **Issue**: `ip_geolocation` and `reverse_dns` tools not appearing in CLI client
+  - Tools were properly registered in server code
+  - But startup validator's `builtInTools` array was missing them
+  - Result: Tools were filtered out during availability check
+  - Server reported only 12 tools instead of 14
+
+- **Solution**: Added missing tools to built-in tools list
+  - Added `ip_geolocation` to `builtInTools` array in `src/utils/startup-validator.ts`
+  - Added `reverse_dns` to `builtInTools` array
+  - Both tools have no external dependencies and should always be available
+
+- **Result**: All 14 tools now correctly available in CLI client
+
+## [Previous Changes] - 2025-11-11
 
 ### Changed
 
