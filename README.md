@@ -2,6 +2,17 @@
 
 A comprehensive, secure MCP (Model Context Protocol) server for remote network testing with built-in authentication, validation, and anti-jailbreaking guardrails.
 
+## 📚 Documentation
+
+Comprehensive documentation is available in the [docs/](docs/) directory:
+- **[QUICKSTART.md](docs/QUICKSTART.md)** - Get started in 5 minutes
+- **[DEPLOYMENT.md](docs/DEPLOYMENT.md)** - Production deployment guide
+- **[AUTH_README.md](docs/AUTH_README.md)** - Authentication & authorization
+- **[CONFIG_README.md](docs/CONFIG_README.md)** - Configuration reference
+- **[SETUP.md](docs/SETUP.md)** - Detailed setup instructions
+- **[CHANGELOG.md](docs/CHANGELOG.md)** - Version history and changes
+- **[CLAUDE.md](docs/CLAUDE.md)** - Architecture & development guide
+
 ## Features
 
 ### 🔒 Security First
@@ -356,7 +367,7 @@ MIT License - See LICENSE file for details
 
 For issues and questions:
 - GitHub Issues: https://github.com/robursoft/mcp-network/issues
-- Documentation: See DEPLOYMENT.md for deployment guide
+- Documentation: See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for deployment guide
 
 ## Roadmap
 
