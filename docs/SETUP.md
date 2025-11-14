@@ -20,7 +20,7 @@ npm run build
 
 ```bash
 # Copy environment template
-cp .env.sample .env
+cp env.sample .env
 ```
 
 ### 3. Set JWT Secret
@@ -169,7 +169,7 @@ Here's everything in one go:
 ```bash
 # Setup
 npm install && npm run build
-cp .env.sample .env
+cp env.sample .env
 
 # Configure (edit .env and add)
 JWT_SECRET="$(openssl rand -base64 32)"

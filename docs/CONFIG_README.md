@@ -12,7 +12,7 @@ The MCP Network Testing Server uses a hierarchical configuration system with thr
 
 ```bash
 # Copy the sample .env file
-cp .env.sample .env
+cp env.sample .env
 
 # Edit .env and replace ALL CHANGEME values
 nano .env
@@ -332,7 +332,7 @@ JWT_SECRET=<generated-secret>
 
 **Solution**: Ensure `.env` exists and has a valid `JWT_SECRET`:
 ```bash
-cp .env.sample .env
+cp env.sample .env
 nano .env  # Edit and save
 ```
 
@@ -431,6 +431,6 @@ Generate JWT now? Yes
 
 For issues or questions:
 1. Check this README
-2. Review `.env.sample` for reference
+2. Review `env.sample` for reference
 3. Run `npm run config --help`
 4. Check server logs for detailed error messages

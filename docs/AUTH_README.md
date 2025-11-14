@@ -17,7 +17,7 @@ Without a valid server token, the connection is rejected immediately. Without a 
 ### 1. Configure JWT Secret
 
 ```bash
-cp .env.sample .env
+cp env.sample .env
 # Generate secure secret
 openssl rand -base64 32
 # Add to .env
@@ -292,7 +292,7 @@ If any validation fails, server refuses to start.
 
 ```bash
 # 1. Configure
-cp .env.sample .env
+cp env.sample .env
 echo "JWT_SECRET=$(openssl rand -base64 32)" > .env
 echo "LETSENCRYPT_EMAIL=admin@example.com" >> .env
 

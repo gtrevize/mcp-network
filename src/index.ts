@@ -604,7 +604,7 @@ async function main() {
     logger.error('Configuration validation failed:');
     configValidation.errors.forEach(error => logger.error(`  - ${error}`));
     logger.error('\nPlease update .env or config.json and ensure all CHANGEME values are replaced');
-    logger.error('Copy .env.sample to .env and update the values');
+    logger.error('Copy env.sample to .env and update the values');
     process.exit(1);
   }
 

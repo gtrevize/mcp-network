@@ -26,7 +26,7 @@ npm run build
 
 ```bash
 # Copy the sample file
-cp .env.sample .env
+cp env.sample .env
 ```
 
 ### Step 2: Set Required Values
@@ -286,7 +286,7 @@ echo "JWT_SECRET=<your-secret>" >> .env
 
 **Fix**: Ensure `.env` exists and has valid JWT_SECRET
 ```bash
-cp .env.sample .env
+cp env.sample .env
 # Edit .env and set JWT_SECRET
 ```
 
@@ -339,7 +339,7 @@ npm install
 npm run build
 
 # 2. Configure
-cp .env.sample .env
+cp env.sample .env
 nano .env  # Replace CHANGEME values
 
 # 3. Create token
