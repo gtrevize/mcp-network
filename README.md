@@ -11,20 +11,22 @@ A comprehensive, secure MCP (Model Context Protocol) server for remote network t
 - **Access Logging**: Complete audit trail of all tool executions
 - **Timeout Management**: Configurable timeouts with sensible defaults
 
-### 🛠️ Network Testing Tools
+### 🛠️ Network Testing Tools (14 Total)
 
-1. **Ping** - Test connectivity and measure latency (IPv4/IPv6)
-2. **Traceroute** - Trace network paths to destinations
-3. **Port Testing** - Check if specific ports are open
-4. **WHOIS** - Domain and IP address lookups
-5. **DNS Lookup** - Resolve DNS records (A, AAAA, MX, TXT, etc.)
-6. **API Testing** - Postman-style HTTP/HTTPS endpoint testing
+1. **DNS Lookup** - Resolve DNS records (A, AAAA, MX, TXT, etc.)
+2. **IP Address Detection** - Get server's public IPv4 address via DNS/API
+3. **IP Geolocation** - Get geolocation info for IP addresses (country, city, ISP, coordinates)
+4. **iPerf3** - Network bandwidth testing (client/server mode)
+5. **Let's Encrypt** - Certificate management with DNS/HTTP challenges
+6. **Ping** - Test connectivity and measure latency (IPv4/IPv6)
 7. **Port Scanner** - Throttled nmap scanning (single IP only)
-8. **TLS/SSL Testing** - Certificate validation and analysis
-9. **Let's Encrypt** - Certificate management with DNS/HTTP challenges
-10. **Tcpdump** - Packet capture with compression
-11. **iPerf3** - Network bandwidth testing
-12. **IP Detection** - Get public IPv4/IPv6 addresses
+8. **Reverse DNS** - PTR record lookup to find hostnames from IP addresses
+9. **Tcpdump** - Packet capture with compression
+10. **API Testing** - Postman-style HTTP/HTTPS endpoint testing
+11. **Port Testing** - Check if specific ports are open
+12. **TLS/SSL Testing** - Certificate validation and analysis
+13. **Traceroute** - Trace network paths to destinations
+14. **WHOIS** - Domain and IP address lookups
 
 ## Installation
 
@@ -96,18 +98,20 @@ Available roles:
 
 Each tool requires specific permissions:
 
-- `network:ping` - Ping tool
-- `network:traceroute` - Traceroute tool
-- `network:port_test` - Port testing
-- `network:whois` - WHOIS lookups
-- `network:dns` - DNS resolution
 - `network:api_test` - API testing
-- `network:port_scan` - Port scanning (nmap)
-- `network:tls_test` - TLS/SSL testing
-- `network:letsencrypt` - Certificate management
-- `network:tcpdump` - Packet capture
-- `network:iperf` - Bandwidth testing
+- `network:dns` - DNS resolution
 - `network:ip_address` - IP detection
+- `network:ip_geolocation` - IP geolocation
+- `network:iperf` - Bandwidth testing
+- `network:letsencrypt` - Certificate management
+- `network:ping` - Ping tool
+- `network:port_scan` - Port scanning (nmap)
+- `network:port_test` - Port testing
+- `network:reverse_dns` - Reverse DNS (PTR records)
+- `network:tcpdump` - Packet capture
+- `network:tls_test` - TLS/SSL testing
+- `network:traceroute` - Traceroute tool
+- `network:whois` - WHOIS lookups
 
 ## Usage
 

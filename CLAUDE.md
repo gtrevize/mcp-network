@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a secure MCP (Model Context Protocol) server for remote network testing. It provides 12 network diagnostic and testing tools with comprehensive security features including JWT authentication, RBAC (Role-Based Access Control), input validation, and anti-jailbreaking guardrails.
+This is a secure MCP (Model Context Protocol) server for remote network testing. It provides 14 network diagnostic and testing tools with comprehensive security features including JWT authentication, RBAC (Role-Based Access Control), input validation, and anti-jailbreaking guardrails.
 
 ## Common Commands
 
