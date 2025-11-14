@@ -1,0 +1,58 @@
+# Source code (only ship compiled dist/)
+src/
+*.ts
+!*.d.ts
+tsconfig.json
+
+# Development files
+.env*
+config.json
+.vscode/
+.idea/
+.DS_Store
+*.log
+
+# Test files
+__tests__/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+jest.config.js
+coverage/
+
+# Build artifacts
+*.tsbuildinfo
+
+# Git files
+.git/
+.gitignore
+
+# NPM files
+node_modules/
+npm-debug.log*
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Packet captures
+*.pcap
+*.pcap.gz
+
+# Certificates and keys (if any)
+*.pem
+*.key
+*.crt
+
+# Test and development artifacts
+TESTAPI.txt
+.claude/
+
+# ESLint
+.eslintrc.json
