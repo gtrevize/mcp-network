@@ -1,6 +1,6 @@
 {
   "name": "@gtrevize/mcp-network",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Comprehensive MCP (Model Context Protocol) server for AI agents to perform network testing and validation with built-in security and authentication",
   "main": "dist/index.js",
   "type": "module",
@@ -64,6 +64,7 @@
     "dist/**/*",
     "README.md",
     "LICENSE",
+    "VERSION",
     "config.json.sample",
     "env.sample",
     "docs/**/*"
