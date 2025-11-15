@@ -36,15 +36,28 @@ npm run dev:client
 mcp-network-cli
 ```
 
-### With Authentication Token
+### Authentication
 
+The client provides interactive authentication with multiple options:
+
+**Option 1: Interactive Prompt (Recommended)**
 ```bash
-# Set token as environment variable
-export MCP_AUTH_TOKEN="your-jwt-token-here"
 npm run client
+# Client will prompt with available authentication methods:
+# - Use AUTH_TOKEN from environment (if set)
+# - Enter token manually
+```
 
-# Or pass token as argument
+**Option 2: CLI Argument (Skip Prompt)**
+```bash
 npm run client -- --token "your-jwt-token-here"
+```
+
+**Option 3: Environment Variable (Interactive Menu)**
+```bash
+export AUTH_TOKEN="your-jwt-token-here"
+npm run client
+# Client will offer to use the environment token or enter manually
 ```
 
 ### Custom Server Path
@@ -59,18 +72,14 @@ To generate a JWT token for testing:
 
 ```bash
 npm run build
-node -e "const jwt = require('./dist/auth/jwt.js'); console.log(jwt.generateTestToken('test-user', ['admin']));"
-```
+npm run config generate-token
 
-Or use the provided script:
+# Or use the command line:
+npm run generate-token <userId> <role>
 
-```bash
-# Generate admin token
-npm run build
-node -e "const { generateTestToken } = require('./dist/auth/jwt.js'); console.log(generateTestToken('cli-user', ['admin']));"
-
-# Generate readonly token
-node -e "const { generateTestToken } = require('./dist/auth/jwt.js'); console.log(generateTestToken('cli-user', ['readonly']));"
+# Examples:
+npm run generate-token cli-user admin
+npm run generate-token test-user readonly
 ```
 
 ## Available Tools
@@ -93,7 +102,10 @@ The CLI provides interactive access to all MCP network testing tools:
 ## Interactive Workflow
 
 1. **Launch**: Start the CLI client
-2. **Authenticate**: Provide JWT token (or use environment variable)
+2. **Authenticate**: Interactive prompt offers:
+   - Use AUTH_TOKEN from environment (if available)
+   - Enter token manually
+   - Or use `--token` CLI option to skip prompt
 3. **Select Tool**: Choose from the list of available tools
 4. **Enter Parameters**: Follow prompts to provide required/optional parameters
 5. **Confirm**: Review and confirm execution
@@ -112,9 +124,15 @@ $ npm run client
 ║                                           ║
 ╚═══════════════════════════════════════════╝
 
+🔐 Authentication Required
+
+? Select authentication method: (Use arrow keys)
+❯ Use AUTH_TOKEN from environment
+  Enter token manually
+
 ℹ Server path: /path/to/dist/index.js
 ⏳ Connecting to MCP server...
-✓ Connected to MCP server (12 tools available)
+✓ Connected to MCP server (14 tools available)
 
 📋 Available Tools
 

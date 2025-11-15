@@ -21,11 +21,14 @@ npm install
 # 2. Generate authentication token
 npm run build
 export JWT_SECRET="your-secret-key-here"
-TOKEN=$(node -e "const { generateTestToken } = require('./dist/auth/jwt.js'); console.log(generateTestToken('quickstart-user', ['admin']));")
-export MCP_AUTH_TOKEN="$TOKEN"
+TOKEN=$(npm run generate-token quickstart-user admin 2>/dev/null | grep -A1 "Token:" | tail -1)
+export AUTH_TOKEN="$TOKEN"
 
 # 3. Start interactive testing (no cloud needed!)
 npm run dev:client
+
+# Client will prompt to use AUTH_TOKEN or enter manually
+# Select "Use AUTH_TOKEN from environment"
 ```
 
 **That's it!** You now have a fully functional network testing environment running locally. Perfect for:
@@ -82,7 +85,7 @@ Comprehensive documentation is available in the [docs/](docs/) directory:
 ## Features
 
 ### 🔒 Security First
-- **JWT Authentication & RBAC**: Token-based authentication with role-based access control
+- **JWT Authentication & RBAC**: Single-token authentication with embedded user identity and roles
 - **Input Validation**: Comprehensive validation to prevent injection attacks
 - **Anti-Jailbreaking**: Pattern detection and sanitization to prevent malicious input
 - **Access Logging**: Complete audit trail of all tool executions
@@ -136,8 +139,8 @@ cp .env.example .env
 
 Required variables:
 
-- `JWT_SECRET` - Secret key for JWT token verification
-- `MCP_AUTH_TOKEN` - JWT token for authentication (see below)
+- `JWT_SECRET` - Secret key for JWT signing (32+ characters recommended)
+- `AUTH_TOKEN` - JWT token with user identity and roles
 
 Optional variables:
 
@@ -148,17 +151,21 @@ Optional variables:
 
 ### Generating Authentication Tokens
 
-The server requires JWT tokens for authentication. To generate a test token:
+The server uses JWT tokens with embedded user identity and roles. Generate a token:
 
 ```bash
 npm run build
-node -e "const jwt = require('./dist/auth/jwt.js'); console.log(jwt.generateTestToken('user-id', ['admin']));"
+npm run config generate-token
+
+# Or use command line:
+npm run generate-token <userId> <role>
+# Example: npm run generate-token admin admin
 ```
 
 Set the generated token in your environment:
 
 ```bash
-export MCP_AUTH_TOKEN="your-generated-token"
+export AUTH_TOKEN="your-generated-token"
 ```
 
 ### Role-Based Access Control
@@ -213,7 +220,7 @@ Add to your MCP client configuration (e.g., Claude Desktop):
       "command": "node",
       "args": ["/path/to/mcp-network/dist/index.js"],
       "env": {
-        "MCP_AUTH_TOKEN": "your-jwt-token",
+        "AUTH_TOKEN": "your-jwt-token",
         "JWT_SECRET": "your-secret-key"
       }
     }
@@ -280,7 +287,7 @@ For local testing and development, the project includes a comprehensive interact
 ### Features
 
 - 🎨 **Rich Terminal UI**: Colorized output with formatted tables and structured data
-- 🔐 **Built-in Authentication**: JWT token support with interactive prompts
+- 🔐 **Built-in Authentication**: Single JWT token with user identity and roles
 - 📋 **Interactive Tool Selection**: Menu-driven interface for all 14 network tools
 - ✅ **Parameter Validation**: Guided input with validation and confirmation
 - 📊 **Formatted Results**: Clean, structured output with execution timing
@@ -303,21 +310,22 @@ The client supports multiple authentication methods:
 
 ```bash
 # Method 1: Environment variable (recommended)
-export MCP_AUTH_TOKEN="your-jwt-token"
+export AUTH_TOKEN="your-jwt-token"
 npm run dev:client
 
-# Method 2: Command line argument
-npm run client -- --token "your-jwt-token"
-
-# Method 3: Interactive prompt (client will ask for token)
+# Method 2: Interactive prompt (client will ask for token)
 npm run dev:client
 ```
 
-### Generate Test Token
+### Generate Authentication Token
 
 ```bash
 npm run build
-node -e "const { generateTestToken } = require('./dist/auth/jwt.js'); console.log(generateTestToken('cli-user', ['admin']));"
+npm run config generate-token
+
+# Or use command line:
+npm run generate-token <userId> <role>
+# Example: npm run generate-token cli-user admin
 ```
 
 ### Example Interactive Session
@@ -577,9 +585,9 @@ While this MCP server implements decent security measures including JWT authenti
 - Implement fail2ban or similar intrusion detection systems
 
 **Access Control:**
-- Use strong, unique JWT secrets
-- Regularly rotate authentication tokens
-- Monitor access logs for suspicious activity
+- Use strong, unique JWT secrets (32+ characters)
+- Rotate JWT_SECRET if tokens are compromised (invalidates all tokens)
+- Monitor access logs for suspicious activity (includes userId from token)
 - Consider implementing additional rate limiting at the network level
 
 **Best Practice:** Deploy the MCP server in a private subnet with access only through a bastion host or VPN connection, rather than exposing it directly to the internet.
@@ -675,11 +683,14 @@ sudo setcap cap_net_raw,cap_net_admin=eip /usr/bin/tcpdump
 
 ### Authentication Errors
 
-Ensure your JWT token is valid and not expired:
+Ensure your JWT token is valid:
 
 ```bash
-# Check token expiration
-node -e "const jwt = require('jsonwebtoken'); console.log(jwt.decode(process.env.MCP_AUTH_TOKEN));"
+# Decode token to see its contents
+node -e "const jwt = require('jsonwebtoken'); console.log(jwt.decode(process.env.AUTH_TOKEN));"
+
+# Or regenerate token
+npm run config generate-token
 ```
 
 ### Tool Not Found

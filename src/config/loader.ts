@@ -21,15 +21,6 @@ try {
   PROJECT_ROOT = process.cwd();
 }
 
-export interface ApiKeyConfig {
-  key: string;
-  userId: string;
-  roles: string[];
-  enabled: boolean;
-  description: string;
-  createdAt: string;
-}
-
 export interface ToolConfig {
   enabled: boolean;
   maxTimeout?: number;
@@ -42,7 +33,6 @@ export interface ToolConfig {
 export interface ServerConfig {
   jwt: {
     secret: string;
-    serverToken: string; // The single permanent JWT token
   };
   server: {
     name: string;
@@ -60,7 +50,6 @@ export interface ServerConfig {
     windowMs: number;
   };
   tools: Record<string, ToolConfig>;
-  apiKeys: Record<string, ApiKeyConfig>;
   letsencrypt: {
     production: boolean;
     email: string;
@@ -151,7 +140,6 @@ class ConfigurationLoader {
     this.config = {
       jwt: {
         secret: fileConfig.jwt?.secret || this.getEnvString('JWT_SECRET', 'CHANGEME'),
-        serverToken: fileConfig.jwt?.serverToken || this.getEnvString('JWT_SERVER_TOKEN', 'CHANGEME'),
       },
       server: {
         name: fileConfig.server?.name || 'mcp-network',
@@ -169,7 +157,6 @@ class ConfigurationLoader {
         windowMs: fileConfig.rateLimit?.windowMs ?? this.getEnvNumber('RATE_LIMIT_WINDOW_MS', 60000),
       },
       tools: this.loadToolsConfig(fileConfig.tools || {}),
-      apiKeys: fileConfig.apiKeys || {},
       letsencrypt: {
         production: this.getEnvBoolean('LETSENCRYPT_PRODUCTION', false),
         email: this.getEnvString('LETSENCRYPT_EMAIL', 'CHANGEME'),
@@ -215,10 +202,6 @@ class ConfigurationLoader {
       errors.push('JWT_SECRET must be changed from default CHANGEME value');
     }
 
-    if (this.config!.jwt.serverToken === 'CHANGEME') {
-      errors.push('JWT_SERVER_TOKEN must be changed from default CHANGEME value - run: npm run config generate-server-token');
-    }
-
     if (this.config!.letsencrypt.email === 'CHANGEME') {
       errors.push('LETSENCRYPT_EMAIL must be changed from default CHANGEME value (or disable Let\'s Encrypt tools)');
     }
@@ -226,11 +209,6 @@ class ConfigurationLoader {
     // Validate JWT secret length
     if (this.config!.jwt.secret.length < 32 && this.config!.jwt.secret !== 'CHANGEME') {
       errors.push('JWT_SECRET should be at least 32 characters long for security');
-    }
-
-    // Check that at least one API key exists
-    if (Object.keys(this.config!.apiKeys).length === 0) {
-      errors.push('At least one API key must be configured - run: npm run config add-key');
     }
 
     // Validate rate limit values
@@ -259,21 +237,6 @@ class ConfigurationLoader {
   public reload(): ServerConfig {
     this.config = null;
     return this.load();
-  }
-
-  public getApiKeyConfig(keyId: string): ApiKeyConfig | undefined {
-    return this.get().apiKeys[keyId];
-  }
-
-  public getAllApiKeys(): Record<string, ApiKeyConfig> {
-    return this.get().apiKeys;
-  }
-
-  public isApiKeyEnabled(keyId: string): boolean {
-    const apiKey = this.getApiKeyConfig(keyId);
-    if (!apiKey) return false;
-
-    return apiKey.enabled;
   }
 }
 

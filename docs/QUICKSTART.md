@@ -123,7 +123,7 @@ Success! Your server is running.
 ### Set Your Token
 
 ```bash
-export MCP_AUTH_TOKEN="your-jwt-token-here"
+export AUTH_TOKEN="your-jwt-token-here"
 ```
 
 ### Launch the Client
@@ -237,7 +237,7 @@ Expires in: 1y
 Generate JWT now? Yes
 
 # Copy the generated token
-export MCP_AUTH_TOKEN="<your-token>"
+export AUTH_TOKEN="<your-token>"
 npm run client
 ```
 
@@ -254,7 +254,7 @@ Expires in: 90d
 Generate JWT now? Yes
 
 # Use in monitoring scripts
-export MCP_AUTH_TOKEN="<monitoring-token>"
+export AUTH_TOKEN="<monitoring-token>"
 ```
 
 ### Temporarily Disable a Token
@@ -298,7 +298,7 @@ cp env.sample .env
 npm start
 
 # In another terminal
-export MCP_AUTH_TOKEN="your-token"
+export AUTH_TOKEN="your-token"
 npm run client
 ```
 
@@ -350,7 +350,7 @@ npm run config create
 npm start
 
 # 5. Use client (in another terminal)
-export MCP_AUTH_TOKEN="your-jwt-token"
+export AUTH_TOKEN="your-jwt-token"
 npm run client
 ```
 

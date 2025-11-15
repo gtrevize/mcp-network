@@ -29,20 +29,22 @@ class MCPNetworkCLI {
       // Show header
       ResultFormatter.showHeader();
 
-      // Handle server JWT token authentication
-      let serverToken = this.options.token || process.env.MCP_AUTH_TOKEN;
+      // Handle authentication token
+      // Priority: CLI option > Interactive prompt (which handles env var)
+      let authToken = this.options.token;
 
-      if (!serverToken) {
-        ResultFormatter.showWarning('No server JWT token provided');
-        serverToken = await ParameterPrompts.getServerToken() || undefined;
-      }
-
-      // Handle API key authentication
-      let apiKey = process.env.MCP_API_KEY;
-
-      if (!apiKey) {
-        ResultFormatter.showWarning('No API key provided');
-        apiKey = await ParameterPrompts.getApiKey() || undefined;
+      if (!authToken) {
+        // Always prompt interactively (prompt will handle env var if available)
+        try {
+          authToken = await ParameterPrompts.getAuthToken() || undefined;
+        } catch (promptError: any) {
+          // Handle user cancellation (Ctrl+C, EOF, etc.)
+          if (promptError.name === 'ExitPromptError' || promptError.message?.includes('force closed')) {
+            ResultFormatter.showInfo('\nAuthentication cancelled. Exiting...');
+            process.exit(0);
+          }
+          throw promptError; // Re-throw if it's a different error
+        }
       }
 
       // Determine server path
@@ -50,7 +52,7 @@ class MCPNetworkCLI {
       ResultFormatter.showInfo(`Server path: ${serverPath}`);
 
       // Connect to server
-      await this.connection.connect(serverPath, serverToken, apiKey);
+      await this.connection.connect(serverPath, authToken);
 
       // Main interaction loop
       await this.interactiveLoop();
@@ -125,7 +127,13 @@ class MCPNetworkCLI {
         // Ask if user wants to continue
         continueSession = await ParameterPrompts.askContinue();
 
-      } catch (error) {
+      } catch (error: any) {
+        // Handle user cancellation (Ctrl+C, EOF, etc.)
+        if (error.name === 'ExitPromptError' || error.message?.includes('force closed')) {
+          ResultFormatter.showInfo('\nSession cancelled. Goodbye!');
+          break;
+        }
+
         if (error instanceof Error) {
           ResultFormatter.formatError(`Error: ${error.message}`);
         } else {
@@ -133,7 +141,16 @@ class MCPNetworkCLI {
         }
 
         // Ask if user wants to continue after error
-        continueSession = await ParameterPrompts.askContinue();
+        try {
+          continueSession = await ParameterPrompts.askContinue();
+        } catch (promptError: any) {
+          // Handle cancellation when asking to continue
+          if (promptError.name === 'ExitPromptError' || promptError.message?.includes('force closed')) {
+            ResultFormatter.showInfo('\nSession cancelled. Goodbye!');
+            break;
+          }
+          throw promptError;
+        }
       }
     }
   }

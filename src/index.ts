@@ -14,8 +14,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 
 import { logger, AccessLogger } from './logger/index.js';
-import { verifyServerToken, PERMISSIONS, ROLE_PERMISSIONS } from './auth/jwt.js';
-import { validateApiKey } from './auth/apikey.js';
+import { verifyAuthToken, PERMISSIONS, ROLE_PERMISSIONS } from './auth/jwt.js';
 import { generateRequestId } from './utils/helpers.js';
 import { ToolExecutionContext } from './types/index.js';
 import { validateConfig, getConfig } from './config/loader.js';
@@ -443,39 +442,28 @@ const TOOL_PERMISSIONS: Record<string, string> = {
 };
 
 /**
- * Extract and verify authentication (JWT + API Key)
+ * Extract and verify authentication from single AUTH_TOKEN
  */
 function extractAuthContext(_request: any): ToolExecutionContext {
-  // Step 1: Verify server JWT token
-  const serverToken = process.env.MCP_AUTH_TOKEN || process.env.JWT_SERVER_TOKEN;
+  // Get authentication token from environment
+  const authToken = process.env.AUTH_TOKEN;
 
-  if (!serverToken) {
-    throw new Error('Authentication required: Server JWT token not provided (set MCP_AUTH_TOKEN or JWT_SERVER_TOKEN)');
+  if (!authToken) {
+    throw new Error('Authentication required: AUTH_TOKEN not provided (set AUTH_TOKEN environment variable)');
   }
 
-  const isValidServerToken = verifyServerToken(serverToken);
-  if (!isValidServerToken) {
-    throw new Error('Invalid server JWT token - connection rejected');
+  // Verify and decode the token
+  const tokenPayload = verifyAuthToken(authToken);
+  if (!tokenPayload) {
+    throw new Error('Invalid authentication token - connection rejected');
   }
 
-  // Step 2: Validate API key for user authentication
-  const apiKey = process.env.MCP_API_KEY;
-
-  if (!apiKey) {
-    throw new Error('API key required: Set MCP_API_KEY environment variable');
-  }
-
-  const apiKeyInfo = validateApiKey(apiKey);
-  if (!apiKeyInfo) {
-    throw new Error('Invalid or disabled API key');
-  }
-
-  logger.debug({ userId: apiKeyInfo.userId, roles: apiKeyInfo.roles }, 'User authenticated');
+  logger.debug({ userId: tokenPayload.userId, roles: tokenPayload.roles }, 'User authenticated');
 
   return {
-    userId: apiKeyInfo.userId,
-    roles: apiKeyInfo.roles,
-    permissions: apiKeyInfo.roles.flatMap(role => ROLE_PERMISSIONS[role] || []),
+    userId: tokenPayload.userId,
+    roles: tokenPayload.roles,
+    permissions: tokenPayload.roles.flatMap(role => ROLE_PERMISSIONS[role] || []),
     timestamp: Date.now(),
     requestId: generateRequestId(),
   };
@@ -707,7 +695,7 @@ async function main() {
   await server.connect(transport);
 
   logger.info('MCP Network Server started successfully');
-  logger.info('Authentication: ' + (process.env.MCP_AUTH_TOKEN ? 'Enabled' : 'DISABLED - Set MCP_AUTH_TOKEN!'));
+  logger.info('Authentication: ' + (process.env.AUTH_TOKEN ? 'Enabled' : 'DISABLED - Set AUTH_TOKEN!'));
 }
 
 // Handle errors

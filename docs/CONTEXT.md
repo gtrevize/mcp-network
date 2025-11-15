@@ -55,7 +55,7 @@ All tools follow standardized pattern:
 ### Environment Variables
 **Critical**:
 - `JWT_SECRET`: Must be changed in production (default is insecure)
-- `MCP_AUTH_TOKEN`: Required for all requests
+- `AUTH_TOKEN`: Required for all requests
 
 **Optional**:
 - `LOG_LEVEL`: Controls logging verbosity
@@ -111,7 +111,7 @@ All tools follow standardized pattern:
       "command": "node",
       "args": ["/path/to/mcp-network/dist/index.js"],
       "env": {
-        "MCP_AUTH_TOKEN": "your-jwt-token",
+        "AUTH_TOKEN": "your-jwt-token",
         "JWT_SECRET": "your-secret-key"
       }
     }

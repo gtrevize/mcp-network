@@ -69,10 +69,9 @@ Copy the API key it generates!
 
 ```bash
 # Server token (same for all clients)
-export MCP_AUTH_TOKEN="<server-token-from-step-4>"
+export AUTH_TOKEN="<server-token-from-step-4>"
 
 # Your personal API key
-export MCP_API_KEY="<api-key-from-step-5>"
 ```
 
 ### 7. Start the Server
@@ -93,8 +92,7 @@ In a NEW terminal:
 
 ```bash
 # Set the same tokens
-export MCP_AUTH_TOKEN="<server-token>"
-export MCP_API_KEY="<your-api-key>"
+export AUTH_TOKEN="<server-token>"
 
 # Launch client
 npm run client
@@ -144,14 +142,13 @@ Configuration validation failed:
 
 **Fix**: Set environment variable:
 ```bash
-export MCP_AUTH_TOKEN="<your-server-token>"
+export AUTH_TOKEN="<your-server-token>"
 ```
 
 ### "API key required"
 
 **Fix**: Set environment variable:
 ```bash
-export MCP_API_KEY="<your-api-key>"
 ```
 
 ### "Permission denied"
@@ -183,15 +180,13 @@ npm run config add-key
 # Follow prompts, copy API key
 
 # Set environment
-export MCP_AUTH_TOKEN="<server-token>"
-export MCP_API_KEY="<api-key>"
+export AUTH_TOKEN="<server-token>"
 
 # Run
 npm start
 
 # In another terminal
-export MCP_AUTH_TOKEN="<server-token>"
-export MCP_API_KEY="<api-key>"
+export AUTH_TOKEN="<server-token>"
 npm run client
 ```
 

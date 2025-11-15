@@ -32,7 +32,7 @@ nano .env
 Set required variables:
 ```bash
 JWT_SECRET=your-secure-random-secret-here
-MCP_AUTH_TOKEN=generated-jwt-token
+AUTH_TOKEN=generated-jwt-token
 NODE_ENV=production
 LOG_LEVEL=info
 ```
@@ -112,7 +112,7 @@ services:
     environment:
       - NODE_ENV=production
       - JWT_SECRET=${JWT_SECRET}
-      - MCP_AUTH_TOKEN=${MCP_AUTH_TOKEN}
+      - AUTH_TOKEN=${AUTH_TOKEN}
       - LOG_LEVEL=info
     volumes:
       - ./logs:/app/logs
@@ -166,7 +166,7 @@ Group=mcpuser
 WorkingDirectory=/opt/mcp-network
 Environment="NODE_ENV=production"
 Environment="JWT_SECRET=your-secret-here"
-Environment="MCP_AUTH_TOKEN=your-token-here"
+Environment="AUTH_TOKEN=your-token-here"
 ExecStart=/usr/bin/node /opt/mcp-network/dist/index.js
 Restart=always
 RestartSec=10

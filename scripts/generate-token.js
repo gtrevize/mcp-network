@@ -1,15 +1,19 @@
 #!/usr/bin/env node
 
-import { generateTestToken } from '../dist/auth/jwt.js';
+import { generateAuthToken } from '../dist/auth/jwt.js';
 
-const role = process.argv[2] || 'admin';
-const userId = process.argv[3] || 'cli-user';
+const userId = process.argv[2] || 'admin-user';
+const role = process.argv[3] || 'admin';
 
-console.log('\n🔐 Generating JWT Token\n');
+console.log('\n🔐 Generating Authentication Token\n');
 console.log('User ID:', userId);
 console.log('Role:', role);
+
+const token = generateAuthToken(userId, [role]);
+
 console.log('\nToken:');
-console.log(generateTestToken(userId, [role]));
-console.log('\nTo use this token, run:');
-console.log(`export MCP_AUTH_TOKEN="${generateTestToken(userId, [role])}"`);
-console.log('npm run client\n');
+console.log(token);
+console.log('\nTo use this token, set it as an environment variable:');
+console.log(`export AUTH_TOKEN="${token}"`);
+console.log('\nThen run your server or client:');
+console.log('npm start\nnpm run client\n');
