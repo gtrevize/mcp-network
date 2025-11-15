@@ -1,6 +1,5 @@
 /**
- * JWT authentication for server-level access
- * API Key authentication for user-level access
+ * JWT authentication with embedded user identity and roles
  */
 import jwt from 'jsonwebtoken';
 import { getConfig } from '../config/loader.js';
@@ -10,35 +9,58 @@ function getJWTSecret(): string {
   return getConfig().jwt.secret;
 }
 
+export interface AuthTokenPayload {
+  userId: string;
+  roles: string[];
+  server: string;
+  iat: number;
+}
+
 /**
- * Verify JWT token (server-level authentication)
- * This token never expires and is shared across all clients
+ * Verify and decode JWT token
+ * Returns the token payload with userId and roles, or null if invalid
  */
-export function verifyServerToken(token: string): boolean {
+export function verifyAuthToken(token: string): AuthTokenPayload | null {
   try {
     const decoded = jwt.verify(token, getJWTSecret()) as any;
 
-    // Check if it's the server token
-    return decoded.type === 'server' && decoded.server === 'mcp-network';
+    // Validate required fields
+    if (!decoded.userId || !Array.isArray(decoded.roles) || decoded.server !== 'mcp-network') {
+      return null;
+    }
+
+    return {
+      userId: decoded.userId,
+      roles: decoded.roles,
+      server: decoded.server,
+      iat: decoded.iat
+    };
   } catch (error) {
-    return false;
+    return null;
   }
 }
 
 /**
- * Generate the permanent server JWT token
- * This should be done once and stored in config
+ * Generate a JWT token with user identity and roles
+ * Tokens never expire for simplicity
  */
-export function generateServerToken(): string {
+export function generateAuthToken(userId: string, roles: string[]): string {
   const payload = {
-    type: 'server',
+    userId,
+    roles,
     server: 'mcp-network',
-    version: '1.0.0',
     iat: Math.floor(Date.now() / 1000)
   };
 
-  // No expiration for server token
+  // No expiration for auth tokens
   return jwt.sign(payload, getJWTSecret());
+}
+
+/**
+ * Generate a test token (for backward compatibility)
+ */
+export function generateTestToken(userId: string, roles: string[]): string {
+  return generateAuthToken(userId, roles);
 }
 
 

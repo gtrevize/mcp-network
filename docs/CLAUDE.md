@@ -40,7 +40,7 @@ node -e "const jwt = require('./dist/auth/jwt.js'); console.log(jwt.generateTest
 
 **MCP Server Flow** (src/index.ts):
 1. Request received via stdio transport
-2. JWT token extracted from `MCP_AUTH_TOKEN` environment variable
+2. JWT token extracted from `AUTH_TOKEN` environment variable
 3. Token verified and auth context created with userId, roles, permissions
 4. Tool permissions checked against user's RBAC permissions
 5. Tool executed with input validation
@@ -116,7 +116,7 @@ Tests use Jest with ts-jest ESM preset:
 
 Required environment variables:
 - `JWT_SECRET`: Secret key for JWT verification (change default in production!)
-- `MCP_AUTH_TOKEN`: JWT token for current user/session
+- `AUTH_TOKEN`: JWT token for current user/session
 
 Optional:
 - `LOG_LEVEL`: debug/info/warn/error (default: info)

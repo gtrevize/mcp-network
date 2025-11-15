@@ -13,7 +13,7 @@ export class MCPConnection {
   private transport: StdioClientTransport | null = null;
   private tools: MCPTool[] = [];
 
-  async connect(serverPath: string, serverToken?: string, apiKey?: string): Promise<void> {
+  async connect(serverPath: string, authToken?: string): Promise<void> {
     const spinner = ResultFormatter.showSpinner('Connecting to MCP server');
 
     try {
@@ -27,14 +27,9 @@ export class MCPConnection {
         }
       }
 
-      // Set server JWT token
-      if (serverToken) {
-        env.MCP_AUTH_TOKEN = serverToken;
-      }
-
-      // Set API key
-      if (apiKey) {
-        env.MCP_API_KEY = apiKey;
+      // Set authentication token
+      if (authToken) {
+        env.AUTH_TOKEN = authToken;
       }
 
       // Create transport using stdio

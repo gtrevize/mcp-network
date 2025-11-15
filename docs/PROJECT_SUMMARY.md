@@ -235,7 +235,7 @@ node -e "const jwt = require('./dist/auth/jwt.js'); console.log(jwt.generateTest
 
 # Set environment variables
 export JWT_SECRET="your-secret-key"
-export MCP_AUTH_TOKEN="generated-token"
+export AUTH_TOKEN="generated-token"
 
 # Run
 npm start
@@ -252,7 +252,7 @@ Add to Claude Desktop or other MCP client:
       "command": "node",
       "args": ["/path/to/mcp-network/dist/index.js"],
       "env": {
-        "MCP_AUTH_TOKEN": "your-jwt-token",
+        "AUTH_TOKEN": "your-jwt-token",
         "JWT_SECRET": "your-secret-key"
       }
     }

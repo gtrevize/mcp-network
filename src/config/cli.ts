@@ -9,15 +9,19 @@ import chalk from 'chalk';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { ROLES } from '../auth/jwt.js';
-import { generateApiKey } from '../auth/apikey.js';
-import { generateServerToken } from '../auth/jwt.js';
-import Table from 'cli-table3';
+import { ROLES, generateAuthToken } from '../auth/jwt.js';
+import dotenv from 'dotenv';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, '../../');
 const CONFIG_PATH = path.join(PROJECT_ROOT, 'config.json');
+const ENV_PATH = path.join(PROJECT_ROOT, '.env');
+
+// Load .env file
+if (fs.existsSync(ENV_PATH)) {
+  dotenv.config({ path: ENV_PATH });
+}
 
 interface ConfigFile {
   server?: any;
@@ -25,7 +29,6 @@ interface ConfigFile {
   security?: any;
   rateLimit?: any;
   tools?: any;
-  apiKeys?: Record<string, any>;
 }
 
 class ConfigCLI {
@@ -45,13 +48,7 @@ class ConfigCLI {
         this.config = {};
       }
     } else {
-      // Initialize with defaults from sample
       this.config = this.getDefaultConfig();
-    }
-
-    // Ensure apiKeys object exists
-    if (!this.config.apiKeys) {
-      this.config.apiKeys = {};
     }
   }
 
@@ -61,10 +58,10 @@ class ConfigCLI {
       try {
         return JSON.parse(fs.readFileSync(samplePath, 'utf-8'));
       } catch {
-        return { apiKeys: {} };
+        return {};
       }
     }
-    return { apiKeys: {} };
+    return {};
   }
 
   private saveConfig(): void {
@@ -77,311 +74,109 @@ class ConfigCLI {
     }
   }
 
-  public async generateServerToken(): Promise<void> {
-    console.log(chalk.cyan.bold('\n🔐 Generate Server JWT Token\n'));
+  public async generateToken(): Promise<void> {
+    console.log(chalk.cyan.bold('\n🔐 Generate Authentication Token\n'));
 
-    console.log(chalk.yellow('This will generate a permanent JWT token for server authentication.'));
-    console.log(chalk.yellow('All clients must use this token to connect to the server.\n'));
+    console.log(chalk.yellow('Generate a JWT token with user identity and roles.'));
+    console.log(chalk.yellow('This token will be used for all authentication.\n'));
 
-    const { confirm } = await inquirer.prompt({
-      type: 'confirm',
-      name: 'confirm',
-      message: 'Generate new server token?',
-      default: true
-    });
-
-    if (!confirm) {
-      console.log(chalk.gray('Cancelled'));
-      return;
-    }
+    const answers = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'userId',
+        message: 'User ID:',
+        default: 'admin-user',
+        validate: (input: string) => input.trim().length > 0 || 'User ID cannot be empty',
+      },
+      {
+        type: 'list',
+        name: 'role',
+        message: 'Select role:',
+        choices: [
+          { name: 'Admin (full access)', value: ROLES.ADMIN },
+          { name: 'Network Engineer (most network tools)', value: ROLES.NETWORK_ENGINEER },
+          { name: 'Developer (basic tools + API testing)', value: ROLES.DEVELOPER },
+          { name: 'Auditor (read-only network diagnostics)', value: ROLES.AUDITOR },
+          { name: 'Readonly (minimal access)', value: ROLES.READONLY },
+        ],
+      },
+    ]);
 
     try {
-      const serverToken = generateServerToken();
+      const token = generateAuthToken(answers.userId, [answers.role]);
 
-      // Save to config
-      if (!this.config.jwt) {
-        this.config.jwt = {};
-      }
-      this.config.jwt.serverToken = serverToken;
-      this.saveConfig();
-
-      console.log(chalk.green('\n✓ Server token generated successfully\n'));
-      console.log(chalk.cyan('Server JWT Token:'));
-      console.log(chalk.white(serverToken));
-      console.log(chalk.gray('\nAdd this to your .env file:'));
-      console.log(chalk.white(`JWT_SERVER_TOKEN="${serverToken}"`));
-      console.log(chalk.gray('\nOr keep it in config.json (recommended)\n'));
+      console.log(chalk.green('\n✓ Authentication token generated successfully\n'));
+      console.log(chalk.cyan('User ID:'), answers.userId);
+      console.log(chalk.cyan('Role:'), answers.role);
+      console.log(chalk.gray('\nToken:'));
+      console.log(chalk.white(token));
+      console.log(chalk.gray('\nSet as environment variable:'));
+      console.log(chalk.white(`export AUTH_TOKEN="${token}"`));
+      console.log('\n');
     } catch (error) {
-      console.error(chalk.red('\n✗ Failed to generate server token:'), (error as Error).message);
+      console.error(chalk.red('\n✗ Failed to generate token:'), (error as Error).message);
     }
   }
 
-  public async listApiKeys(): Promise<void> {
-    console.log(chalk.cyan.bold('\n📋 Configured API Keys\n'));
+  public async viewConfig(): Promise<void> {
+    console.log(chalk.cyan.bold('\n📋 Current Configuration\n'));
 
-    const apiKeys = this.config.apiKeys || {};
-    const keyIds = Object.keys(apiKeys);
+    const displayConfig = JSON.parse(JSON.stringify(this.config));
 
-    if (keyIds.length === 0) {
-      console.log(chalk.yellow('No API keys configured'));
-      console.log(chalk.gray('Run: npm run config add-key'));
-      return;
+    // Mask sensitive values
+    if (displayConfig.jwt?.secret) {
+      displayConfig.jwt.secret = displayConfig.jwt.secret.substring(0, 8) + '...';
     }
 
-    const table = new Table({
-      head: ['Key ID', 'User', 'Roles', 'Status', 'Description'].map(h => chalk.cyan.bold(h)),
-      style: { head: [], border: ['gray'] }
-    });
-
-    for (const keyId of keyIds) {
-      const apiKey = apiKeys[keyId];
-      const status = apiKey.enabled ? chalk.green('Active') : chalk.red('Disabled');
-
-      table.push([
-        keyId,
-        apiKey.userId || 'N/A',
-        (apiKey.roles || []).join(', '),
-        status,
-        apiKey.description || ''
-      ]);
-    }
-
-    console.log(table.toString());
-    console.log();
+    console.log(JSON.stringify(displayConfig, null, 2));
+    console.log('');
   }
 
-  public async addApiKey(): Promise<void> {
-    console.log(chalk.cyan.bold('\n🔑 Create New API Key\n'));
+  public async init(): Promise<void> {
+    console.log(chalk.cyan.bold('\n🚀 Initialize MCP Network Configuration\n'));
 
-    const answers: any = {};
+    console.log(chalk.yellow('This wizard will help you set up the initial configuration.\n'));
 
-    const { keyId } = await inquirer.prompt({
-      type: 'input',
-      name: 'keyId',
-      message: 'API Key ID (unique identifier):',
-      validate: (input: string) => {
-        if (!input) return 'Key ID is required';
-        if (this.config.apiKeys![input]) return 'Key ID already exists';
-        return true;
+    const hasConfig = fs.existsSync(CONFIG_PATH);
+    if (hasConfig) {
+      const { overwrite } = await inquirer.prompt({
+        type: 'confirm',
+        name: 'overwrite',
+        message: 'config.json already exists. Overwrite?',
+        default: false,
+      });
+
+      if (!overwrite) {
+        console.log(chalk.gray('\nCancelled'));
+        return;
       }
-    });
-    answers.keyId = keyId;
+    }
 
-    const { userId } = await inquirer.prompt({
-      type: 'input',
-      name: 'userId',
-      message: 'User ID:',
-      validate: (input: string) => input.length > 0 || 'User ID is required'
-    });
-    answers.userId = userId;
-
-    const { roles } = await inquirer.prompt({
-      type: 'checkbox',
-      name: 'roles',
-      message: 'Select roles:',
-      choices: Object.values(ROLES).map(role => ({ name: role, value: role })),
-      validate: (input: any) => (Array.isArray(input) && input.length > 0) || 'At least one role is required'
-    });
-    answers.roles = roles;
-
-    const { description } = await inquirer.prompt({
-      type: 'input',
-      name: 'description',
-      message: 'Description:',
-      default: ''
-    });
-    answers.description = description;
-
-    const createdAt = new Date().toISOString();
-    const apiKey = generateApiKey();
-
-    this.config.apiKeys![answers.keyId] = {
-      key: apiKey,
-      userId: answers.userId,
-      roles: answers.roles,
-      enabled: true,
-      description: answers.description,
-      createdAt
+    // Create basic config
+    this.config = {
+      server: {
+        name: 'mcp-network',
+        version: '1.0.0',
+        description: 'MCP Network Testing Server',
+      },
+      jwt: {},
+      security: {
+        jailbreakDetection: true,
+        inputValidation: true,
+      },
+      rateLimit: {
+        enabled: true,
+        maxRequests: 100,
+        windowMs: 60000,
+      },
     };
 
     this.saveConfig();
 
-    console.log(chalk.green('\n✓ API Key created successfully'));
-    console.log(chalk.cyan('\n📝 API Key Details:'));
-    console.log(chalk.gray('Key ID:'), answers.keyId);
-    console.log(chalk.gray('User ID:'), answers.userId);
-    console.log(chalk.gray('Roles:'), answers.roles.join(', '));
-    console.log(chalk.gray('\nAPI Key:'));
-    console.log(chalk.white(apiKey));
-    console.log(chalk.gray('\nTo use this key:'));
-    console.log(chalk.white(`export MCP_API_KEY="${apiKey}"`));
-    console.log();
-  }
-
-  public async deleteApiKey(): Promise<void> {
-    const apiKeys = Object.keys(this.config.apiKeys || {});
-
-    if (apiKeys.length === 0) {
-      console.log(chalk.yellow('\nNo API keys to delete'));
-      return;
-    }
-
-    const { keyId } = await inquirer.prompt({
-      type: 'list',
-      name: 'keyId',
-      message: 'Select API key to delete:',
-      choices: apiKeys
-    });
-
-    const { confirm } = await inquirer.prompt({
-      type: 'confirm',
-      name: 'confirm',
-      message: `Delete API key "${keyId}"?`,
-      default: false
-    });
-
-    if (confirm) {
-      delete this.config.apiKeys![keyId];
-      this.saveConfig();
-      console.log(chalk.green(`\n✓ API key "${keyId}" deleted`));
-    } else {
-      console.log(chalk.gray('\nCancelled'));
-    }
-  }
-
-  public async toggleApiKey(): Promise<void> {
-    const apiKeys = Object.keys(this.config.apiKeys || {});
-
-    if (apiKeys.length === 0) {
-      console.log(chalk.yellow('\nNo API keys configured'));
-      return;
-    }
-
-    const { keyId } = await inquirer.prompt({
-      type: 'list',
-      name: 'keyId',
-      message: 'Select API key to enable/disable:',
-      choices: apiKeys.map(id => ({
-        name: `${id} ${this.config.apiKeys![id].enabled ? chalk.green('[enabled]') : chalk.red('[disabled]')}`,
-        value: id
-      }))
-    });
-
-    const apiKey = this.config.apiKeys![keyId];
-    apiKey.enabled = !apiKey.enabled;
-
-    this.saveConfig();
-    console.log(chalk.green(`\n✓ API key "${keyId}" is now ${apiKey.enabled ? 'enabled' : 'disabled'}`));
-  }
-
-  public async viewApiKey(): Promise<void> {
-    const apiKeys = Object.keys(this.config.apiKeys || {});
-
-    if (apiKeys.length === 0) {
-      console.log(chalk.yellow('\nNo API keys configured'));
-      return;
-    }
-
-    const { keyId } = await inquirer.prompt({
-      type: 'list',
-      name: 'keyId',
-      message: 'Select API key to view:',
-      choices: apiKeys
-    });
-
-    const apiKey = this.config.apiKeys![keyId];
-
-    console.log(chalk.cyan.bold(`\n📋 API Key Details: ${keyId}\n`));
-    console.log(chalk.gray('User ID:'), apiKey.userId);
-    console.log(chalk.gray('Roles:'), apiKey.roles.join(', '));
-    console.log(chalk.gray('Status:'), apiKey.enabled ? chalk.green('Enabled') : chalk.red('Disabled'));
-    console.log(chalk.gray('Created:'), new Date(apiKey.createdAt).toLocaleString());
-    console.log(chalk.gray('Description:'), apiKey.description || 'N/A');
-    console.log(chalk.gray('\nAPI Key:'));
-    console.log(chalk.white(apiKey.key));
-    console.log();
-  }
-
-  public async regenerateApiKey(): Promise<void> {
-    const apiKeys = Object.keys(this.config.apiKeys || {});
-
-    if (apiKeys.length === 0) {
-      console.log(chalk.yellow('\nNo API keys configured'));
-      return;
-    }
-
-    const { keyId } = await inquirer.prompt({
-      type: 'list',
-      name: 'keyId',
-      message: 'Select API key to regenerate:',
-      choices: apiKeys
-    });
-
-    const { confirm } = await inquirer.prompt({
-      type: 'confirm',
-      name: 'confirm',
-      message: `Regenerate API key for "${keyId}"? This will invalidate the old key.`,
-      default: false
-    });
-
-    if (!confirm) {
-      console.log(chalk.gray('\nCancelled'));
-      return;
-    }
-
-    const newKey = generateApiKey();
-    this.config.apiKeys![keyId].key = newKey;
-
-    this.saveConfig();
-
-    console.log(chalk.green('\n✓ API key regenerated successfully'));
-    console.log(chalk.gray('New API Key:'));
-    console.log(chalk.white(newKey));
-    console.log();
-  }
-
-  public showConfig(): void {
-    console.log(chalk.cyan.bold('\n⚙️  Current Configuration\n'));
-
-    // Mask sensitive values
-    const displayConfig = JSON.parse(JSON.stringify(this.config));
-    if (displayConfig.jwt?.secret) {
-      displayConfig.jwt.secret = '***';
-    }
-    if (displayConfig.jwt?.serverToken) {
-      displayConfig.jwt.serverToken = displayConfig.jwt.serverToken.substring(0, 20) + '...';
-    }
-    if (displayConfig.apiKeys) {
-      for (const keyId in displayConfig.apiKeys) {
-        displayConfig.apiKeys[keyId].key = displayConfig.apiKeys[keyId].key.substring(0, 16) + '...';
-      }
-    }
-
-    console.log(JSON.stringify(displayConfig, null, 2));
-    console.log();
-  }
-
-  public async initConfig(): Promise<void> {
-    console.log(chalk.cyan.bold('\n🚀 Initialize Configuration\n'));
-
-    const { confirm } = await inquirer.prompt({
-      type: 'confirm',
-      name: 'confirm',
-      message: 'This will create/overwrite config.json with defaults. Continue?',
-      default: false
-    });
-
-    if (!confirm) {
-      console.log(chalk.gray('Cancelled'));
-      return;
-    }
-
-    this.config = this.getDefaultConfig();
-    this.saveConfig();
-    console.log(chalk.green('✓ Configuration initialized'));
-    console.log(chalk.yellow('\nNext steps:'));
-    console.log(chalk.gray('1. Generate server token: npm run config generate-server-token'));
-    console.log(chalk.gray('2. Add API keys: npm run config add-key'));
+    console.log(chalk.green('\n✓ Configuration initialized\n'));
+    console.log(chalk.gray('Next steps:'));
+    console.log(chalk.gray('1. Set JWT_SECRET in .env file: openssl rand -base64 32'));
+    console.log(chalk.gray('2. Generate authentication token: npm run config generate-token'));
   }
 }
 
@@ -390,58 +185,30 @@ const program = new Command();
 const cli = new ConfigCLI();
 
 program
-  .name('mcp-config')
-  .description('MCP Network Server Configuration Manager')
+  .name('mcp-network-config')
+  .description('MCP Network Testing Server Configuration Tool')
   .version('1.0.0');
 
 program
   .command('init')
-  .description('Initialize config.json with defaults')
-  .action(() => cli.initConfig());
+  .description('Initialize configuration file')
+  .action(() => cli.init());
 
 program
-  .command('show')
-  .description('Show current configuration')
-  .action(() => cli.showConfig());
-
-program
-  .command('generate-server-token')
+  .command('generate-token')
   .alias('gen-token')
-  .description('Generate permanent server JWT token')
-  .action(() => cli.generateServerToken());
+  .description('Generate authentication JWT token')
+  .action(() => cli.generateToken());
 
 program
-  .command('list-keys')
-  .alias('ls')
-  .description('List all API keys')
-  .action(() => cli.listApiKeys());
+  .command('view')
+  .alias('show')
+  .description('View current configuration')
+  .action(() => cli.viewConfig());
 
-program
-  .command('add-key')
-  .alias('add')
-  .description('Create a new API key')
-  .action(() => cli.addApiKey());
+program.parse(process.argv);
 
-program
-  .command('delete-key')
-  .alias('rm')
-  .description('Delete an API key')
-  .action(() => cli.deleteApiKey());
-
-program
-  .command('toggle-key')
-  .description('Enable/disable an API key')
-  .action(() => cli.toggleApiKey());
-
-program
-  .command('view-key')
-  .description('View API key details')
-  .action(() => cli.viewApiKey());
-
-program
-  .command('regenerate-key')
-  .alias('regen')
-  .description('Regenerate an API key')
-  .action(() => cli.regenerateApiKey());
-
-program.parse();
+// If no command provided, show help
+if (!process.argv.slice(2).length) {
+  program.outputHelp();
+}

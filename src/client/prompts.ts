@@ -224,77 +224,59 @@ export class ParameterPrompts {
     return continueSession;
   }
 
-  static async getServerToken(): Promise<string | null> {
-    console.log(chalk.yellow('\n🔐 Server Authentication Required\n'));
-    console.log(chalk.gray('The server JWT token is permanent and shared by all clients.'));
-    console.log(chalk.gray('Generate with: npm run config generate-server-token'));
-    console.log();
+  static async getAuthToken(): Promise<string | null> {
+    const envToken = process.env.AUTH_TOKEN;
+    const hasValidEnvToken = envToken && envToken.trim() !== '' && envToken !== 'CHANGEME';
 
-    const { method } = await inquirer.prompt([
+    console.log(chalk.yellow('\n🔐 Authentication Required\n'));
+
+    if (hasValidEnvToken) {
+      // Show menu: use env token or enter manually
+      const { choice } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'choice',
+          message: 'Select authentication method:',
+          choices: [
+            {
+              name: 'Use AUTH_TOKEN from environment',
+              value: 'env',
+              short: 'Use environment token'
+            },
+            {
+              name: 'Enter token manually',
+              value: 'manual',
+              short: 'Enter manually'
+            }
+          ]
+        }
+      ]);
+
+      if (choice === 'env') {
+        return envToken;
+      }
+      // Fall through to manual entry
+    } else {
+      console.log(chalk.gray('No AUTH_TOKEN found in environment.'));
+      console.log(chalk.gray('Generate a token with: npm run config generate-token\n'));
+    }
+
+    // Manual entry (either chosen explicitly or because no env token)
+    const { token } = await inquirer.prompt([
       {
-        type: 'list',
-        name: 'method',
-        message: 'Provide server JWT token:',
-        choices: [
-          { name: 'Enter server token now', value: 'enter' },
-          { name: 'Use MCP_AUTH_TOKEN from environment', value: 'env' },
-          { name: 'Skip (will fail)', value: 'skip' }
-        ]
+        type: 'password',
+        name: 'token',
+        message: 'Enter authentication token:',
+        mask: '*',
+        validate: (input: string) => {
+          if (!input || input.trim() === '') {
+            return 'Authentication token is required';
+          }
+          return true;
+        }
       }
     ]);
 
-    if (method === 'enter') {
-      const { token } = await inquirer.prompt([
-        {
-          type: 'password',
-          name: 'token',
-          message: 'Enter server JWT token:',
-          mask: '*',
-          validate: (input: string) => input.length > 0 || 'Token cannot be empty'
-        }
-      ]);
-      return token;
-    } else if (method === 'env') {
-      return process.env.MCP_AUTH_TOKEN || null;
-    }
-
-    return null;
-  }
-
-  static async getApiKey(): Promise<string | null> {
-    console.log(chalk.yellow('\n🔑 API Key Required\n'));
-    console.log(chalk.gray('Your personal API key identifies you to the server.'));
-    console.log(chalk.gray('Create one with: npm run config add-key'));
-    console.log();
-
-    const { method } = await inquirer.prompt([
-      {
-        type: 'list',
-        name: 'method',
-        message: 'Provide API key:',
-        choices: [
-          { name: 'Enter API key now', value: 'enter' },
-          { name: 'Use MCP_API_KEY from environment', value: 'env' },
-          { name: 'Skip (will fail)', value: 'skip' }
-        ]
-      }
-    ]);
-
-    if (method === 'enter') {
-      const { key } = await inquirer.prompt([
-        {
-          type: 'password',
-          name: 'key',
-          message: 'Enter API key:',
-          mask: '*',
-          validate: (input: string) => input.length > 0 || 'API key cannot be empty'
-        }
-      ]);
-      return key;
-    } else if (method === 'env') {
-      return process.env.MCP_API_KEY || null;
-    }
-
-    return null;
+    return token && token.length > 0 ? token : null;
   }
 }
