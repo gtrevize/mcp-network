@@ -27,9 +27,10 @@ npm run build
 
 # 2. Generate authentication token
 export JWT_SECRET="your-secret-key-here"
-# For npm install: use npx to run the generate-token script
-# For source install: use npm run generate-token
-TOKEN=$(npx -y @gtrevize/mcp-network generate-token quickstart-user admin 2>/dev/null | tail -1)
+# For npm install:
+TOKEN=$(npx -y mcp-network-generate-token quickstart-user admin 2>&1 | grep -A1 "^Token:" | tail -1)
+# For source install:
+# TOKEN=$(npm run generate-token quickstart-user admin 2>&1 | grep -A1 "^Token:" | tail -1)
 export AUTH_TOKEN="$TOKEN"
 
 # 3. Start interactive testing (no cloud needed!)
@@ -168,12 +169,14 @@ Optional variables:
 The server uses JWT tokens with embedded user identity and roles. Generate a token:
 
 ```bash
+# Global install:
+mcp-network-generate-token <userId> <role>
+# Example: mcp-network-generate-token admin admin
+
+# Source install:
 npm run build
 npm run config generate-token
-
-# Or use command line:
-npm run generate-token <userId> <role>
-# Example: npm run generate-token admin admin
+# Or directly: npm run generate-token <userId> <role>
 ```
 
 Set the generated token in your environment:
@@ -398,12 +401,14 @@ npm run dev:client
 ### Generate Authentication Token
 
 ```bash
+# Global install:
+mcp-network-generate-token <userId> <role>
+# Example: mcp-network-generate-token cli-user admin
+
+# Source install:
 npm run build
 npm run config generate-token
-
-# Or use command line:
-npm run generate-token <userId> <role>
-# Example: npm run generate-token cli-user admin
+# Or directly: npm run generate-token <userId> <role>
 ```
 
 ### Example Interactive Session
@@ -896,7 +901,10 @@ Ensure your JWT token is valid:
 # Decode token to see its contents
 node -e "const jwt = require('jsonwebtoken'); console.log(jwt.decode(process.env.AUTH_TOKEN));"
 
-# Or regenerate token
+# Or regenerate token (global install)
+mcp-network-generate-token <userId> <role>
+
+# Or regenerate token (source install)
 npm run config generate-token
 ```
 
