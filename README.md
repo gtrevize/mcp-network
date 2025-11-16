@@ -2,6 +2,9 @@
 
 A comprehensive, secure MCP (Model Context Protocol) server for remote network testing with built-in authentication, validation, and anti-jailbreaking guardrails.
 
+> **⚠️ AI-Assisted Development Notice:**
+> Portions of this project were created with the assistance of AI tools, with human-in-the-loop (HITL) oversight and human-based testing. Despite these measures, AI-generated outputs can contain mistakes. Users are strongly encouraged to review, validate, and test the software for their own use cases. This project is provided "AS IS," without warranties of any kind.
+
 ## Motivation
 
 This MCP server was designed to bridge a critical gap when working with AI Agents (Claude Code, Codex, Gemini, Warp, OpenCode, etc.) for server configuration tasks. While these agents excel at generating configuration scripts for SMTP servers, web servers, VPNs with complex routing, and similar infrastructure tasks, they traditionally lacked the ability to validate whether their configurations actually work.
@@ -76,6 +79,7 @@ Choose the right deployment approach for your needs:
 Comprehensive documentation is available in the [docs/](docs/) directory:
 - **[QUICKSTART.md](docs/QUICKSTART.md)** - Get started in 5 minutes
 - **[DEPLOYMENT.md](docs/DEPLOYMENT.md)** - Production deployment guide
+- **[API_README.md](docs/API_README.md)** - REST API reference and examples
 - **[AUTH_README.md](docs/AUTH_README.md)** - Authentication & authorization
 - **[CONFIG_README.md](docs/CONFIG_README.md)** - Configuration reference
 - **[SETUP.md](docs/SETUP.md)** - Detailed setup instructions
@@ -83,6 +87,11 @@ Comprehensive documentation is available in the [docs/](docs/) directory:
 - **[CLAUDE.md](docs/CLAUDE.md)** - Architecture & development guide
 
 ## Features
+
+### 🌐 Multiple Access Methods
+- **MCP Protocol**: Native integration with Claude Desktop and MCP-compatible clients
+- **REST API**: Complete HTTP/HTTPS API with Swagger documentation
+- **Interactive CLI**: Rich terminal interface for local testing and development
 
 ### 🔒 Security First
 - **JWT Authentication & RBAC**: Single-token authentication with embedded user identity and roles
@@ -199,8 +208,11 @@ Each tool requires specific permissions:
 
 ## Usage
 
-### Running the Server
+### Running the Servers
 
+The project provides three server modes:
+
+**MCP Server Only** (for Claude Desktop and MCP clients):
 ```bash
 # Production
 npm start
@@ -208,6 +220,28 @@ npm start
 # Development with auto-reload
 npm run dev
 ```
+
+**REST API Server Only** (for HTTP/HTTPS access):
+```bash
+# Production
+npm run api
+
+# Development with auto-reload
+npm run dev:api
+```
+
+**Both Servers Simultaneously** (recommended for full-stack development):
+```bash
+# Production - runs both MCP and REST API servers
+npm run start:both
+
+# Development - runs both with auto-reload
+npm run dev:both
+```
+
+The dual-server mode runs both servers in parallel with color-coded output:
+- **MCP Server**: Cyan output, stdio transport
+- **REST API Server**: Green output, http://localhost:3001
 
 ### MCP Client Configuration
 
@@ -395,6 +429,98 @@ The CLI client consists of modular components:
 
 This design allows for both interactive use and potential automation/scripting integration.
 
+## 🌐 REST API Server
+
+In addition to the MCP protocol and interactive CLI, the server provides a complete REST API for accessing all 14 network testing tools via HTTP/HTTPS. This makes it easy to integrate with web applications, automation scripts, and AI agents that don't support MCP natively.
+
+### Features
+
+- 🔒 **JWT Authentication**: Same authentication system as MCP server
+- 📖 **Interactive Documentation**: Swagger UI for API exploration and testing
+- 🛡️ **Security**: Helmet.js, CORS, compression, and rate limiting
+- 🎯 **Complete Coverage**: All 14 tools exposed via REST endpoints
+- 📊 **Structured Responses**: Consistent JSON response format
+- ⚡ **Health Check**: Unauthenticated endpoint for monitoring
+
+### Quick Start
+
+```bash
+# Option 1: Run API server only
+npm run dev:api
+
+# Option 2: Run both MCP and REST API servers (recommended)
+npm run dev:both
+
+# Access interactive documentation
+open http://localhost:3001/api-docs
+
+# Test an endpoint
+curl -H "Authorization: Bearer YOUR_TOKEN" \
+  http://localhost:3001/api/tools
+```
+
+**Note:** Using `npm run dev:both` runs both the MCP server (stdio) and REST API server (HTTP) simultaneously, which is ideal for full-stack development and testing.
+
+### Configuration
+
+Configure the REST API server via environment variables in `.env`:
+
+```bash
+API_PORT=3001                      # REST API server port (default: 3000)
+API_ENABLED=true                   # Enable/disable API server
+API_RATE_LIMIT_MAX=100             # Max requests per window
+API_RATE_LIMIT_WINDOW_MS=60000     # Rate limit window (1 minute)
+```
+
+### Example API Calls
+
+**Ping a host:**
+```bash
+curl -X POST \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"target":"google.com","count":4}' \
+  http://localhost:3001/api/tools/ping
+```
+
+**DNS lookup:**
+```bash
+curl -X POST \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"target":"example.com","recordType":"A"}' \
+  http://localhost:3001/api/tools/dns_lookup
+```
+
+**Port scan:**
+```bash
+curl -X POST \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"target":"192.168.1.1","ports":"22,80,443"}' \
+  http://localhost:3001/api/tools/port_scan
+```
+
+### API Documentation
+
+For complete API documentation including all endpoints, request/response formats, error handling, and production deployment guide, see **[docs/API_README.md](docs/API_README.md)**.
+
+### When to Use REST API
+
+**Ideal for:**
+- Web application integration
+- Automation scripts (Python, JavaScript, etc.)
+- AI agents without MCP support
+- Webhook integrations
+- CI/CD pipelines
+- Monitoring and alerting systems
+
+**Use MCP protocol instead for:**
+- Claude Desktop integration
+- Native MCP client applications
+- Real-time bidirectional communication
+- Lower overhead communication
+
 ## 💡 Real-World Use Cases
 
 ### AI Agent Server Configuration Scenarios
@@ -506,10 +632,16 @@ All inputs are validated against:
 
 ### Rate Limiting
 
-Tools implement various rate limiting strategies:
+**Tool-Level Rate Limiting:**
 - Port scanner: Throttled with minimum delay
 - API testing: Configurable timeouts
 - Let's Encrypt: Subject to ACME rate limits
+
+**REST API Rate Limiting:**
+- IP-based rate limiting (default: 100 requests per minute)
+- Configurable via `API_RATE_LIMIT_MAX` and `API_RATE_LIMIT_WINDOW_MS`
+- Applied to all `/api/*` endpoints
+- Health check endpoint exempt from rate limiting
 
 ### Sandboxing
 
@@ -542,7 +674,12 @@ Consult your cloud provider's documentation for their specific policies and proc
 
 ## Deployment
 
-This MCP server has rock-bottom minimal system requirements, making it ideal for deployment on always-on, always-free cloud instances. The lightweight Node.js application typically uses less than 100MB of RAM and minimal CPU resources during operation.
+This server (both MCP and REST API) has minimal system requirements, making it ideal for deployment on always-on, always-free cloud instances. The lightweight Node.js application typically uses less than 100MB of RAM and minimal CPU resources during operation.
+
+**Deployment Options:**
+- **MCP Server Only** - For Claude Desktop and MCP clients (stdio transport)
+- **REST API Only** - For web applications and HTTP clients (port 3001)
+- **Both Servers** - Run simultaneously for maximum flexibility (`npm run start:both`)
 
 > **Disclaimer:** Cloud provider offerings and free tier specifications listed below are accurate as of November 2025 and are subject to change without notice. This information is provided for reference only. Always verify current pricing, availability, and terms directly with your chosen cloud provider.
 
@@ -575,8 +712,11 @@ While this MCP server implements decent security measures including JWT authenti
 
 **Network-Level Protection:**
 - Configure cloud provider security groups/firewalls to restrict access to essential ports only
+  - MCP Server: stdio transport (no port exposure needed)
+  - REST API Server: Port 3001 (or configured `API_PORT`)
 - Implement IP whitelisting using CIDR blocks to limit access to known networks
 - Consider VPN-only access for maximum security
+- Use HTTPS reverse proxy (nginx/Apache) for REST API in production
 
 **Instance-Level Security:**
 - Enable and configure local firewall (iptables, ufw, Windows Firewall)
@@ -598,14 +738,25 @@ While this MCP server implements decent security measures including JWT authenti
 
 ```
 src/
-├── index.ts              # Main server entry point
+├── index.ts              # Main MCP server entry point
 ├── types/                # TypeScript type definitions
 ├── auth/                 # JWT authentication and RBAC
 ├── middleware/           # Validation and guardrails
-├── tools/                # Individual tool implementations
+├── tools/                # Individual tool implementations (14 tools)
 ├── utils/                # Helper functions
 ├── logger/               # Logging system
-└── __tests__/            # Test suites
+├── client/               # Interactive CLI client
+│   ├── index.ts          # CLI entry point
+│   ├── connection.ts     # MCP connection management
+│   ├── prompts.ts        # Interactive prompts
+│   └── formatter.ts      # Result formatting
+├── rest-api/             # REST API server
+│   ├── server.ts         # Express server entry point
+│   ├── middleware/       # Auth and error handling
+│   ├── routes/           # API routes (health, tools)
+│   └── swagger.ts        # OpenAPI specification
+├── config/               # Configuration CLI
+└── __tests__/            # Test suites (MCP + REST API)
 ```
 
 ### Running Tests
