@@ -76,6 +76,7 @@ Choose the right deployment approach for your needs:
 Comprehensive documentation is available in the [docs/](docs/) directory:
 - **[QUICKSTART.md](docs/QUICKSTART.md)** - Get started in 5 minutes
 - **[DEPLOYMENT.md](docs/DEPLOYMENT.md)** - Production deployment guide
+- **[API_README.md](docs/API_README.md)** - REST API reference and examples
 - **[AUTH_README.md](docs/AUTH_README.md)** - Authentication & authorization
 - **[CONFIG_README.md](docs/CONFIG_README.md)** - Configuration reference
 - **[SETUP.md](docs/SETUP.md)** - Detailed setup instructions
@@ -83,6 +84,11 @@ Comprehensive documentation is available in the [docs/](docs/) directory:
 - **[CLAUDE.md](docs/CLAUDE.md)** - Architecture & development guide
 
 ## Features
+
+### 🌐 Multiple Access Methods
+- **MCP Protocol**: Native integration with Claude Desktop and MCP-compatible clients
+- **REST API**: Complete HTTP/HTTPS API with Swagger documentation
+- **Interactive CLI**: Rich terminal interface for local testing and development
 
 ### 🔒 Security First
 - **JWT Authentication & RBAC**: Single-token authentication with embedded user identity and roles
@@ -394,6 +400,96 @@ The CLI client consists of modular components:
 - **Result Formatter** (`formatter.ts`): Colorized output and data presentation
 
 This design allows for both interactive use and potential automation/scripting integration.
+
+## 🌐 REST API Server
+
+In addition to the MCP protocol and interactive CLI, the server provides a complete REST API for accessing all 14 network testing tools via HTTP/HTTPS. This makes it easy to integrate with web applications, automation scripts, and AI agents that don't support MCP natively.
+
+### Features
+
+- 🔒 **JWT Authentication**: Same authentication system as MCP server
+- 📖 **Interactive Documentation**: Swagger UI for API exploration and testing
+- 🛡️ **Security**: Helmet.js, CORS, compression, and rate limiting
+- 🎯 **Complete Coverage**: All 14 tools exposed via REST endpoints
+- 📊 **Structured Responses**: Consistent JSON response format
+- ⚡ **Health Check**: Unauthenticated endpoint for monitoring
+
+### Quick Start
+
+```bash
+# 1. Start the API server
+npm run api
+
+# Or in development mode with auto-reload
+npm run dev:api
+
+# 2. Access interactive documentation
+open http://localhost:3001/api-docs
+
+# 3. Test an endpoint
+curl -H "Authorization: Bearer YOUR_TOKEN" \
+  http://localhost:3001/api/tools
+```
+
+### Configuration
+
+Configure the REST API server via environment variables in `.env`:
+
+```bash
+API_PORT=3001                      # REST API server port (default: 3000)
+API_ENABLED=true                   # Enable/disable API server
+API_RATE_LIMIT_MAX=100             # Max requests per window
+API_RATE_LIMIT_WINDOW_MS=60000     # Rate limit window (1 minute)
+```
+
+### Example API Calls
+
+**Ping a host:**
+```bash
+curl -X POST \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"target":"google.com","count":4}' \
+  http://localhost:3001/api/tools/ping
+```
+
+**DNS lookup:**
+```bash
+curl -X POST \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"target":"example.com","recordType":"A"}' \
+  http://localhost:3001/api/tools/dns_lookup
+```
+
+**Port scan:**
+```bash
+curl -X POST \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"target":"192.168.1.1","ports":"22,80,443"}' \
+  http://localhost:3001/api/tools/port_scan
+```
+
+### API Documentation
+
+For complete API documentation including all endpoints, request/response formats, error handling, and production deployment guide, see **[docs/API_README.md](docs/API_README.md)**.
+
+### When to Use REST API
+
+**Ideal for:**
+- Web application integration
+- Automation scripts (Python, JavaScript, etc.)
+- AI agents without MCP support
+- Webhook integrations
+- CI/CD pipelines
+- Monitoring and alerting systems
+
+**Use MCP protocol instead for:**
+- Claude Desktop integration
+- Native MCP client applications
+- Real-time bidirectional communication
+- Lower overhead communication
 
 ## 💡 Real-World Use Cases
 
