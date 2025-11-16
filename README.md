@@ -13,10 +13,12 @@ For example, an agent might generate a firewall rule to open a specific port or 
 
 ## � Quick Start
 
-Get up and running in under 2 minutes:
+Get up and running in under 3 minutes:
+
+### Step 1: Install
 
 ```bash
-# 1. Install from npm (recommended)
+# Install globally (recommended)
 npm install -g @gtrevize/mcp-network
 
 # OR clone from source
@@ -24,29 +26,77 @@ git clone https://github.com/gtrevize/mcp-network.git
 cd mcp-network
 npm install
 npm run build
-
-# 2. Generate authentication token
-export JWT_SECRET="your-secret-key-here"
-# For npm install:
-TOKEN=$(npx -y mcp-network-generate-token quickstart-user admin 2>&1 | grep -A1 "^Token:" | tail -1)
-# For source install:
-# TOKEN=$(npm run generate-token quickstart-user admin 2>&1 | grep -A1 "^Token:" | tail -1)
-export AUTH_TOKEN="$TOKEN"
-
-# 3. Start interactive testing (no cloud needed!)
-npx mcp-network-cli
-
-# Client will prompt to use AUTH_TOKEN or enter manually
-# Select "Use AUTH_TOKEN from environment"
 ```
 
-**That's it!** You now have a fully functional network testing environment running locally. Perfect for:
+### Step 2: First-Time Setup
+
+Run the interactive setup to configure your environment:
+
+```bash
+# Global install:
+mcp-network-setup
+
+# Source install:
+npm run build
+bash scripts/setup.sh
+```
+
+This will:
+- Generate a secure `JWT_SECRET`
+- Create your admin authentication token
+- Configure environment file (`~/.mcp-network.env` for global install, `.env` for source)
+- Provide startup instructions
+
+### Step 3: Start the Server
+
+```bash
+# Global install - load environment then start server
+export $(cat ~/.mcp-network.env | xargs)
+mcp-network-both  # Starts both MCP and REST API servers
+
+# OR start only what you need:
+# mcp-network-server  # MCP server only
+# mcp-network-api     # REST API server only
+
+# Source install:
+npm run start:both  # Starts both servers
+# npm start          # MCP server only
+# npm run api        # REST API server only
+```
+
+The server is now running! You'll see:
+- **MCP Server**: Ready on stdio transport for MCP clients
+- **REST API Server**: Running on http://localhost:3001 (with Swagger docs at /api-docs)
+
+### Step 4: Use the Client
+
+Test your setup with the interactive CLI client:
+
+```bash
+# Global install:
+mcp-network-cli
+
+# Source install:
+npm run client
+```
+
+**That's it!** You now have a fully functional network testing environment. Perfect for:
 - Testing server configurations with AI agents
 - Learning the available network tools
 - Validating connectivity before deploying to production
 - Experimenting with network diagnostics
 
-For production deployment to cloud instances, see the [Deployment](#deployment) section.
+### Production Deployment
+
+For production environments, you'll want to run the server as a daemon:
+
+**See [docs/DAEMON.md](docs/DAEMON.md)** for comprehensive guides on:
+- PM2 process manager (recommended, cross-platform)
+- systemd (Linux)
+- launchd (macOS)
+- Docker (all platforms)
+
+For cloud deployment to AWS, DigitalOcean, etc., see the [Deployment](#deployment) section.
 
 ## � Local vs Cloud Deployment
 
@@ -85,10 +135,12 @@ Choose the right deployment approach for your needs:
 Comprehensive documentation is available in the [docs/](docs/) directory:
 - **[QUICKSTART.md](docs/QUICKSTART.md)** - Get started in 5 minutes
 - **[DEPLOYMENT.md](docs/DEPLOYMENT.md)** - Production deployment guide
+- **[DAEMON.md](docs/DAEMON.md)** - Running as a daemon (PM2, systemd, launchd, Docker)
 - **[API_README.md](docs/API_README.md)** - REST API reference and examples
 - **[AUTH_README.md](docs/AUTH_README.md)** - Authentication & authorization
 - **[CONFIG_README.md](docs/CONFIG_README.md)** - Configuration reference
 - **[SETUP.md](docs/SETUP.md)** - Detailed setup instructions
+- **[RELEASE.md](docs/RELEASE.md)** - Release workflow and versioning
 - **[CHANGELOG.md](docs/CHANGELOG.md)** - Version history and changes
 - **[CLAUDE.md](docs/CLAUDE.md)** - Architecture & development guide
 
