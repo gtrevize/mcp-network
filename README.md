@@ -629,10 +629,16 @@ All inputs are validated against:
 
 ### Rate Limiting
 
-Tools implement various rate limiting strategies:
+**Tool-Level Rate Limiting:**
 - Port scanner: Throttled with minimum delay
 - API testing: Configurable timeouts
 - Let's Encrypt: Subject to ACME rate limits
+
+**REST API Rate Limiting:**
+- IP-based rate limiting (default: 100 requests per minute)
+- Configurable via `API_RATE_LIMIT_MAX` and `API_RATE_LIMIT_WINDOW_MS`
+- Applied to all `/api/*` endpoints
+- Health check endpoint exempt from rate limiting
 
 ### Sandboxing
 
@@ -665,7 +671,12 @@ Consult your cloud provider's documentation for their specific policies and proc
 
 ## Deployment
 
-This MCP server has rock-bottom minimal system requirements, making it ideal for deployment on always-on, always-free cloud instances. The lightweight Node.js application typically uses less than 100MB of RAM and minimal CPU resources during operation.
+This server (both MCP and REST API) has minimal system requirements, making it ideal for deployment on always-on, always-free cloud instances. The lightweight Node.js application typically uses less than 100MB of RAM and minimal CPU resources during operation.
+
+**Deployment Options:**
+- **MCP Server Only** - For Claude Desktop and MCP clients (stdio transport)
+- **REST API Only** - For web applications and HTTP clients (port 3001)
+- **Both Servers** - Run simultaneously for maximum flexibility (`npm run start:both`)
 
 > **Disclaimer:** Cloud provider offerings and free tier specifications listed below are accurate as of November 2025 and are subject to change without notice. This information is provided for reference only. Always verify current pricing, availability, and terms directly with your chosen cloud provider.
 
@@ -698,8 +709,11 @@ While this MCP server implements decent security measures including JWT authenti
 
 **Network-Level Protection:**
 - Configure cloud provider security groups/firewalls to restrict access to essential ports only
+  - MCP Server: stdio transport (no port exposure needed)
+  - REST API Server: Port 3001 (or configured `API_PORT`)
 - Implement IP whitelisting using CIDR blocks to limit access to known networks
 - Consider VPN-only access for maximum security
+- Use HTTPS reverse proxy (nginx/Apache) for REST API in production
 
 **Instance-Level Security:**
 - Enable and configure local firewall (iptables, ufw, Windows Firewall)
@@ -721,14 +735,25 @@ While this MCP server implements decent security measures including JWT authenti
 
 ```
 src/
-├── index.ts              # Main server entry point
+├── index.ts              # Main MCP server entry point
 ├── types/                # TypeScript type definitions
 ├── auth/                 # JWT authentication and RBAC
 ├── middleware/           # Validation and guardrails
-├── tools/                # Individual tool implementations
+├── tools/                # Individual tool implementations (14 tools)
 ├── utils/                # Helper functions
 ├── logger/               # Logging system
-└── __tests__/            # Test suites
+├── client/               # Interactive CLI client
+│   ├── index.ts          # CLI entry point
+│   ├── connection.ts     # MCP connection management
+│   ├── prompts.ts        # Interactive prompts
+│   └── formatter.ts      # Result formatting
+├── rest-api/             # REST API server
+│   ├── server.ts         # Express server entry point
+│   ├── middleware/       # Auth and error handling
+│   ├── routes/           # API routes (health, tools)
+│   └── swagger.ts        # OpenAPI specification
+├── config/               # Configuration CLI
+└── __tests__/            # Test suites (MCP + REST API)
 ```
 
 ### Running Tests
