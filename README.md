@@ -16,19 +16,24 @@ For example, an agent might generate a firewall rule to open a specific port or 
 Get up and running in under 2 minutes:
 
 ```bash
-# 1. Clone and install
+# 1. Install from npm (recommended)
+npm install -g @gtrevize/mcp-network
+
+# OR clone from source
 git clone https://github.com/gtrevize/mcp-network.git
 cd mcp-network
 npm install
+npm run build
 
 # 2. Generate authentication token
-npm run build
 export JWT_SECRET="your-secret-key-here"
-TOKEN=$(npm run generate-token quickstart-user admin 2>/dev/null | grep -A1 "Token:" | tail -1)
+# For npm install: use npx to run the generate-token script
+# For source install: use npm run generate-token
+TOKEN=$(npx -y @gtrevize/mcp-network generate-token quickstart-user admin 2>/dev/null | tail -1)
 export AUTH_TOKEN="$TOKEN"
 
 # 3. Start interactive testing (no cloud needed!)
-npm run dev:client
+npx mcp-network-cli
 
 # Client will prompt to use AUTH_TOKEN or enter manually
 # Select "Use AUTH_TOKEN from environment"
