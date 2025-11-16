@@ -215,9 +215,32 @@ Each tool requires specific permissions:
 
 ### Running the Servers
 
-The project provides three server modes:
+The project provides three server modes with two installation methods:
+
+#### Option 1: Standalone Commands (Global Install)
+
+After installing globally with `npm install -g @gtrevize/mcp-network`:
 
 **MCP Server Only** (for Claude Desktop and MCP clients):
+```bash
+mcp-network-server
+```
+
+**REST API Server Only** (for HTTP/HTTPS access):
+```bash
+mcp-network-api
+```
+
+**Both Servers Simultaneously** (recommended for full access):
+```bash
+mcp-network-both
+```
+
+#### Option 2: npm Scripts (Source Install)
+
+When running from source directory:
+
+**MCP Server Only**:
 ```bash
 # Production
 npm start
@@ -226,7 +249,7 @@ npm start
 npm run dev
 ```
 
-**REST API Server Only** (for HTTP/HTTPS access):
+**REST API Server Only**:
 ```bash
 # Production
 npm run api
@@ -235,7 +258,7 @@ npm run api
 npm run dev:api
 ```
 
-**Both Servers Simultaneously** (recommended for full-stack development):
+**Both Servers Simultaneously**:
 ```bash
 # Production - runs both MCP and REST API servers
 npm run start:both
@@ -244,14 +267,30 @@ npm run start:both
 npm run dev:both
 ```
 
-The dual-server mode runs both servers in parallel with color-coded output:
-- **MCP Server**: Cyan output, stdio transport
-- **REST API Server**: Green output, http://localhost:3001
+**Note**: The dual-server mode runs both servers in parallel:
+- **MCP Server**: stdio transport for MCP protocol clients
+- **REST API Server**: http://localhost:3001 (or configured API_PORT)
 
 ### MCP Client Configuration
 
 Add to your MCP client configuration (e.g., Claude Desktop):
 
+**Option 1: Global Install (Recommended)**
+```json
+{
+  "mcpServers": {
+    "network": {
+      "command": "mcp-network-server",
+      "env": {
+        "AUTH_TOKEN": "your-jwt-token",
+        "JWT_SECRET": "your-secret-key"
+      }
+    }
+  }
+}
+```
+
+**Option 2: Source Install**
 ```json
 {
   "mcpServers": {
