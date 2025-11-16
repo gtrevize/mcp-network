@@ -1,6 +1,6 @@
 {
   "name": "@gtrevize/mcp-network",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Comprehensive MCP (Model Context Protocol) server for AI agents to perform network testing and validation with built-in security and authentication",
   "main": "dist/index.js",
   "type": "module",
@@ -13,7 +13,7 @@
     "url": "https://github.com/gtrevize/mcp-network/issues"
   },
   "scripts": {
-    "build": "tsc && chmod +x dist/index.js && chmod +x dist/client/index.js && chmod +x dist/config/cli.js && chmod +x dist/rest-api/server.js",
+    "build": "tsc && chmod +x dist/index.js && chmod +x dist/client/index.js && chmod +x dist/config/cli.js && chmod +x dist/rest-api/server.js && chmod +x dist/bin/dual-server.js",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "api": "node dist/rest-api/server.js",
@@ -32,11 +32,15 @@
     "lint:fix": "eslint src --ext .ts --fix",
     "prepare": "npm run build",
     "semgrep": "semgrep scan --config p/nodejs --exclude=node_modules --exclude=dist .",
-    "semgrep-verbose": "semgrep scan --config p/nodejs --exclude=node_modules --exclude=dist --verbose ."
+    "semgrep:verbose": "semgrep scan --config p/nodejs --exclude=node_modules --exclude=dist --verbose .",
+    "semgrep:ci": "semgrep ci --config p/nodejs --exclude=node_modules --exclude=dist ."
   },
   "bin": {
     "mcp-network-cli": "./dist/client/index.js",
-    "mcp-config": "./dist/config/cli.js"
+    "mcp-config": "./dist/config/cli.js",
+    "mcp-network-server": "./dist/index.js",
+    "mcp-network-api": "./dist/rest-api/server.js",
+    "mcp-network-both": "./dist/bin/dual-server.js"
   },
   "keywords": [
     "mcp",
