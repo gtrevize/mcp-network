@@ -908,6 +908,30 @@ Verify required system tools are installed:
 which ping traceroute dig whois nmap tcpdump iperf3
 ```
 
+### npm Deprecation Warnings
+
+During installation, you may see deprecation warnings for the following packages:
+
+```
+npm warn deprecated inflight@1.0.6
+npm warn deprecated lodash.get@4.4.2
+npm warn deprecated lodash.isequal@4.5.0
+npm warn deprecated glob@7.1.6
+```
+
+**These are safe to ignore.** All deprecated packages are transitive dependencies (dependencies of dependencies) originating from `swagger-jsdoc@6.2.8`, which is used only for API documentation generation. They do not affect:
+
+- Production runtime behavior
+- Application security
+- Core functionality
+
+**Dependency Chain:**
+- `swagger-jsdoc@6.2.8` → `glob@7.1.6` → `inflight@1.0.6`
+- `swagger-jsdoc@6.2.8` → `swagger-parser` → `z-schema` → `lodash.get`, `lodash.isequal`
+
+**Future Resolution:**
+We are monitoring `swagger-jsdoc` v7.0.0 (currently in release candidate) which addresses these deprecations. Once v7.0.0 is stable, we will upgrade to eliminate these warnings.
+
 ## Contributing
 
 This project follows security best practices. When contributing:
