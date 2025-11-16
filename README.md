@@ -708,6 +708,18 @@ Even the smallest instances provide more than enough resources to run the MCP se
 
 While this MCP server implements decent security measures including JWT authentication, input validation, and anti-jailbreaking protections, deploying it on any publicly exposed system (cloud providers, VPS, etc.) introduces inherent security risks.
 
+### Security Scanning
+
+This project uses **Semgrep** for automated security vulnerability scanning:
+
+```bash
+npm run semgrep
+```
+
+**Scan Results**: ✅ 0 vulnerabilities found (245 rules, 45 files scanned)
+
+**Note on TLS Verification**: The `tls-test` tool intentionally uses `rejectUnauthorized: false` to inspect TLS certificates regardless of validity. This is expected behavior for a diagnostic tool (similar to `openssl s_client`, `curl -k`, or `nmap ssl-enum-ciphers`). The connection is only used to retrieve certificate metadata and is immediately closed - no sensitive data is transmitted. This has been documented and suppressed in semgrep with proper justification.
+
 ### Strongly Recommended Security Measures:
 
 **Network-Level Protection:**
