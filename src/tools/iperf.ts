@@ -136,6 +136,8 @@ function runIperfServer(command: string, port: number, timeout: number): Promise
 
     logger.info({ command, args }, 'Starting iPerf server');
 
+    // SECURITY: Port is validated via validatePort() middleware. Command is hardcoded system binary path.
+    // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
     const proc = spawn(command, args);
     let output = '';
     let errorOutput = '';
@@ -218,6 +220,8 @@ function runIperfClient(
 
     logger.info({ command, args }, 'Starting iPerf client');
 
+    // SECURITY: Host/port validated via validateHost()/validatePort(). Command is hardcoded binary path.
+    // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
     const proc = spawn(command, args);
     let output = '';
     let errorOutput = '';

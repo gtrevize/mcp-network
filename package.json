@@ -30,7 +30,9 @@
     "test:coverage": "jest --coverage",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "semgrep": "semgrep scan --config p/nodejs --exclude=node_modules --exclude=dist .",
+    "semgrep-verbose": "semgrep scan --config p/nodejs --exclude=node_modules --exclude=dist --verbose ."
   },
   "bin": {
     "mcp-network-cli": "./dist/client/index.js",

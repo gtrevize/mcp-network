@@ -26,9 +26,13 @@ export function isCommandAvailable(command: string): boolean {
   try {
     const currentPlatform = getPlatform();
 
+    // SECURITY: Command parameter is only used for checking system binary existence.
+    // This function is called with hardcoded command names only (ping, nmap, tcpdump, etc).
     if (currentPlatform === 'windows') {
+      // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
       execSync(`where ${command}`, { stdio: 'ignore' });
     } else {
+      // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
       execSync(`which ${command}`, { stdio: 'ignore' });
     }
 

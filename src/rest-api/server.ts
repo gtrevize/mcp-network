@@ -28,7 +28,25 @@ const API_ENABLED = process.env.API_ENABLED !== 'false';
 
 // Security middleware
 app.use(helmet());
-app.use(cors());
+
+// CORS configuration - restrictive by default, configurable via environment
+// Supports: false (no CORS), * (all origins), or comma-separated list of origins
+const corsOrigin = process.env.CORS_ORIGIN;
+let origin: boolean | string | string[] = false; // Default: same-origin only
+
+if (corsOrigin === '*') {
+  origin = true; // Allow all origins (insecure, for development only)
+} else if (corsOrigin && corsOrigin.trim()) {
+  origin = corsOrigin.split(',').map(o => o.trim()); // Array of allowed origins
+}
+
+const corsOptions: cors.CorsOptions = {
+  origin,
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+app.use(cors(corsOptions));
+
 app.use(compression());
 
 // Body parsing middleware

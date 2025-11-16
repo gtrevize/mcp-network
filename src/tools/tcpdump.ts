@@ -130,6 +130,8 @@ function capturePackets(
 
     logger.info({ command, args }, 'Starting tcpdump');
 
+    // SECURITY: Interface validated via validateHost(). Filter sanitized. Command is hardcoded binary.
+    // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
     const proc = spawn(command, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
