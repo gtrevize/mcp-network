@@ -2,6 +2,9 @@
 
 A comprehensive, secure MCP (Model Context Protocol) server for remote network testing with built-in authentication, validation, and anti-jailbreaking guardrails.
 
+> **⚠️ AI-Assisted Development Notice:**
+> Portions of this project were created with the assistance of AI tools, with human-in-the-loop (HITL) oversight and human-based testing. Despite these measures, AI-generated outputs can contain mistakes. Users are strongly encouraged to review, validate, and test the software for their own use cases. This project is provided "AS IS," without warranties of any kind.
+
 ## Motivation
 
 This MCP server was designed to bridge a critical gap when working with AI Agents (Claude Code, Codex, Gemini, Warp, OpenCode, etc.) for server configuration tasks. While these agents excel at generating configuration scripts for SMTP servers, web servers, VPNs with complex routing, and similar infrastructure tasks, they traditionally lacked the ability to validate whether their configurations actually work.
