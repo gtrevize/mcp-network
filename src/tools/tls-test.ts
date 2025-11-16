@@ -85,6 +85,16 @@ export async function testTls(options: TlsTestOptions): Promise<ToolResult> {
   }
 }
 
+/**
+ * Retrieves TLS certificate information from a remote server.
+ *
+ * SECURITY NOTE: This function intentionally sets rejectUnauthorized=false
+ * because it is a diagnostic tool designed to inspect TLS certificates
+ * regardless of their validity. This is the expected behavior for certificate
+ * testing tools (similar to openssl s_client, curl -k, or nmap ssl-enum-ciphers).
+ * The connection is only used to retrieve certificate metadata and is immediately
+ * closed - no sensitive data is transmitted.
+ */
 function getTlsCertificate(
   host: string,
   port: number,
@@ -92,10 +102,15 @@ function getTlsCertificate(
   timeout: number
 ): Promise<any> {
   return new Promise((resolve, reject) => {
+    // JUSTIFICATION: This is a TLS certificate inspection tool that must connect to servers
+    // with invalid/expired certificates to analyze them. This is intentional diagnostic behavior,
+    // not a security vulnerability. No sensitive data is transmitted over this connection.
+    // Similar to openssl s_client, curl -k, or nmap ssl-enum-ciphers diagnostic tools.
+    // nosemgrep
     const connectOptions: tls.ConnectionOptions = {
       host,
       port,
-      rejectUnauthorized: false, // We want to see the cert even if invalid
+      rejectUnauthorized: false, // Required to inspect invalid/expired certificates
     };
 
     // Only include servername if provided (don't send SNI for IP addresses)
