@@ -37,12 +37,80 @@ describe('startup-validator', () => {
 
       const result = validateNetworkTools();
 
-      // Built-in tools should always be available
+      // Built-in tools should always be available (except letsencrypt which is optional)
       expect(result.availableTools.has('test_port')).toBe(true);
       expect(result.availableTools.has('test_api')).toBe(true);
       expect(result.availableTools.has('test_tls')).toBe(true);
       expect(result.availableTools.has('get_ip_address')).toBe(true);
+      expect(result.availableTools.has('ip_geolocation')).toBe(true);
+      expect(result.availableTools.has('reverse_dns')).toBe(true);
+    });
+
+    it('should enable letsencrypt when email is configured', () => {
+      // Mock all platform-specific tools as unavailable
+      mockedGetPlatform.mockReturnValue('linux');
+      mockedCheckToolAvailability.mockReturnValue({
+        available: false,
+        command: 'mock',
+        message: 'not available'
+      });
+
+      const result = validateNetworkTools({
+        letsencrypt: { email: 'test@example.com' }
+      });
+
       expect(result.availableTools.has('letsencrypt')).toBe(true);
+      expect(result.toolStatus.letsencrypt.available).toBe(true);
+    });
+
+    it('should disable letsencrypt when email is not configured', () => {
+      // Mock all platform-specific tools as unavailable
+      mockedGetPlatform.mockReturnValue('linux');
+      mockedCheckToolAvailability.mockReturnValue({
+        available: false,
+        command: 'mock',
+        message: 'not available'
+      });
+
+      const result = validateNetworkTools();
+
+      expect(result.availableTools.has('letsencrypt')).toBe(false);
+      expect(result.toolStatus.letsencrypt.available).toBe(false);
+      expect(result.toolStatus.letsencrypt.reason).toContain('LETSENCRYPT_EMAIL not configured');
+    });
+
+    it('should disable letsencrypt when email is CHANGEME', () => {
+      // Mock all platform-specific tools as unavailable
+      mockedGetPlatform.mockReturnValue('linux');
+      mockedCheckToolAvailability.mockReturnValue({
+        available: false,
+        command: 'mock',
+        message: 'not available'
+      });
+
+      const result = validateNetworkTools({
+        letsencrypt: { email: 'CHANGEME' }
+      });
+
+      expect(result.availableTools.has('letsencrypt')).toBe(false);
+      expect(result.toolStatus.letsencrypt.available).toBe(false);
+    });
+
+    it('should disable letsencrypt when email is empty', () => {
+      // Mock all platform-specific tools as unavailable
+      mockedGetPlatform.mockReturnValue('linux');
+      mockedCheckToolAvailability.mockReturnValue({
+        available: false,
+        command: 'mock',
+        message: 'not available'
+      });
+
+      const result = validateNetworkTools({
+        letsencrypt: { email: '' }
+      });
+
+      expect(result.availableTools.has('letsencrypt')).toBe(false);
+      expect(result.toolStatus.letsencrypt.available).toBe(false);
     });
 
     it('should detect ping availability', () => {

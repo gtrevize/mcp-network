@@ -602,7 +602,7 @@ async function main() {
 
   // Validate network tools availability
   logger.info('Checking network tool availability...');
-  const toolValidation = validateNetworkTools();
+  const toolValidation = validateNetworkTools(config);
   AVAILABLE_TOOLS = toolValidation.availableTools;
   logStartupValidation(toolValidation);
 

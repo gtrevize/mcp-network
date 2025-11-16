@@ -202,9 +202,8 @@ class ConfigurationLoader {
       errors.push('JWT_SECRET must be changed from default CHANGEME value');
     }
 
-    if (this.config!.letsencrypt.email === 'CHANGEME') {
-      errors.push('LETSENCRYPT_EMAIL must be changed from default CHANGEME value (or disable Let\'s Encrypt tools)');
-    }
+    // Let's Encrypt is optional - no validation needed
+    // Empty string or omitted email means letsencrypt tool is disabled
 
     // Validate JWT secret length
     if (this.config!.jwt.secret.length < 32 && this.config!.jwt.secret !== 'CHANGEME') {

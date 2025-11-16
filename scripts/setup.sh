@@ -47,6 +47,23 @@ USER_ID=${USER_ID:-admin}
 read -p "Enter role (admin/network_engineer/developer/readonly, default: admin): " ROLE
 ROLE=${ROLE:-admin}
 
+# Prompt for Let's Encrypt configuration (optional)
+echo -e "\n${BLUE}Let's Encrypt Configuration (Optional)${NC}"
+echo "Let's Encrypt allows automatic SSL/TLS certificate management."
+echo "If you don't need this feature, you can skip it."
+read -p "Configure Let's Encrypt? (y/N): " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+  read -p "Enter your email for Let's Encrypt: " LETSENCRYPT_EMAIL
+  if [[ -z "$LETSENCRYPT_EMAIL" ]]; then
+    echo -e "${YELLOW}No email provided - Let's Encrypt will be disabled${NC}"
+    LETSENCRYPT_EMAIL=""
+  fi
+else
+  echo -e "${YELLOW}Let's Encrypt disabled - letsencrypt tool will not be available${NC}"
+  LETSENCRYPT_EMAIL=""
+fi
+
 # Generate token
 echo -e "\n${GREEN}Generating authentication token...${NC}"
 export JWT_SECRET="$JWT_SECRET"
@@ -88,8 +105,10 @@ API_RATE_LIMIT_WINDOW_MS=60000
 # WARNING: Using * is insecure for production
 CORS_ORIGIN=
 
-# Optional: Let's Encrypt
+# Optional: Let's Encrypt Configuration
+# Leave LETSENCRYPT_EMAIL empty to disable the letsencrypt tool
 LETSENCRYPT_PRODUCTION=false
+LETSENCRYPT_EMAIL="$LETSENCRYPT_EMAIL"
 EOF
 
 echo "✓ Environment file created"

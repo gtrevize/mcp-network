@@ -100,7 +100,7 @@ function canRunTcpdump(): { can: boolean; reason?: string } {
 /**
  * Validate all network tools at startup
  */
-export function validateNetworkTools(): StartupValidationResult {
+export function validateNetworkTools(config?: { letsencrypt?: { email?: string } }): StartupValidationResult {
   const result: StartupValidationResult = {
     availableTools: new Set<string>(),
     warnings: [],
@@ -116,13 +116,25 @@ export function validateNetworkTools(): StartupValidationResult {
     'get_ip_address',
     'ip_geolocation',
     'reverse_dns',
-    'letsencrypt',
   ];
 
   builtInTools.forEach(tool => {
     result.availableTools.add(tool);
     result.toolStatus[tool] = { available: true };
   });
+
+  // Let's Encrypt is optional - only enable if configured
+  const letsencryptEmail = config?.letsencrypt?.email;
+  if (letsencryptEmail && letsencryptEmail !== '' && letsencryptEmail !== 'CHANGEME') {
+    result.availableTools.add('letsencrypt');
+    result.toolStatus.letsencrypt = { available: true };
+  } else {
+    result.toolStatus.letsencrypt = {
+      available: false,
+      reason: 'LETSENCRYPT_EMAIL not configured. Set email in .env to enable Let\'s Encrypt certificate management.'
+    };
+    result.warnings.push('letsencrypt tool disabled - LETSENCRYPT_EMAIL not configured');
+  }
 
   // Check ping
   const pingCheck = checkToolAvailability('ping');
