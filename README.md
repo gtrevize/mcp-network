@@ -205,8 +205,11 @@ Each tool requires specific permissions:
 
 ## Usage
 
-### Running the Server
+### Running the Servers
 
+The project provides three server modes:
+
+**MCP Server Only** (for Claude Desktop and MCP clients):
 ```bash
 # Production
 npm start
@@ -214,6 +217,28 @@ npm start
 # Development with auto-reload
 npm run dev
 ```
+
+**REST API Server Only** (for HTTP/HTTPS access):
+```bash
+# Production
+npm run api
+
+# Development with auto-reload
+npm run dev:api
+```
+
+**Both Servers Simultaneously** (recommended for full-stack development):
+```bash
+# Production - runs both MCP and REST API servers
+npm run start:both
+
+# Development - runs both with auto-reload
+npm run dev:both
+```
+
+The dual-server mode runs both servers in parallel with color-coded output:
+- **MCP Server**: Cyan output, stdio transport
+- **REST API Server**: Green output, http://localhost:3001
 
 ### MCP Client Configuration
 
@@ -417,19 +442,21 @@ In addition to the MCP protocol and interactive CLI, the server provides a compl
 ### Quick Start
 
 ```bash
-# 1. Start the API server
-npm run api
-
-# Or in development mode with auto-reload
+# Option 1: Run API server only
 npm run dev:api
 
-# 2. Access interactive documentation
+# Option 2: Run both MCP and REST API servers (recommended)
+npm run dev:both
+
+# Access interactive documentation
 open http://localhost:3001/api-docs
 
-# 3. Test an endpoint
+# Test an endpoint
 curl -H "Authorization: Bearer YOUR_TOKEN" \
   http://localhost:3001/api/tools
 ```
+
+**Note:** Using `npm run dev:both` runs both the MCP server (stdio) and REST API server (HTTP) simultaneously, which is ideal for full-stack development and testing.
 
 ### Configuration
 

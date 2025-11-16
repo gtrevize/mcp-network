@@ -5,19 +5,27 @@ The MCP Network Testing Server provides a complete REST API for accessing all 14
 ## Quick Start
 
 ```bash
-# 1. Start the API server
-npm run api
+# Option 1: Start API server only
+npm run dev:api        # Development mode with auto-reload
+npm run api            # Production mode
 
-# Or in development mode with auto-reload
-npm run dev:api
+# Option 2: Start both MCP and REST API servers (recommended for development)
+npm run dev:both       # Both servers in development mode
+npm run start:both     # Both servers in production mode
 
-# 2. Access API documentation
+# Access API documentation
 open http://localhost:3001/api-docs
 
-# 3. Test an endpoint
+# Test an endpoint
 curl -H "Authorization: Bearer YOUR_TOKEN" \
   http://localhost:3001/api/tools
 ```
+
+**Dual-Server Mode Benefits:**
+- Run both MCP (stdio) and REST API (HTTP) servers simultaneously
+- Color-coded output for easy debugging (MCP: cyan, API: green)
+- Perfect for full-stack development and testing
+- Single command to start everything
 
 ## Configuration
 
