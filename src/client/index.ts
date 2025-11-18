@@ -2,6 +2,7 @@
 
 import { Command } from 'commander';
 import { MCPConnection } from './connection.js';
+import { APIConnection } from './api-connection.js';
 import { ParameterPrompts } from './prompts.js';
 import { ResultFormatter } from './formatter.js';
 import path from 'path';
@@ -13,21 +14,31 @@ const __dirname = path.dirname(__filename);
 interface CLIOptions {
   server?: string;
   token?: string;
+  mode?: 'mcp' | 'api';
+  apiUrl?: string;
 }
 
+type Connection = MCPConnection | APIConnection;
+
 class MCPNetworkCLI {
-  private connection: MCPConnection;
+  private connection: Connection | null = null;
   private options: CLIOptions;
+  private mode: 'mcp' | 'api' = 'mcp';
 
   constructor(options: CLIOptions) {
-    this.connection = new MCPConnection();
     this.options = options;
+    this.mode = options.mode || 'mcp';
   }
 
   async start(): Promise<void> {
     try {
       // Show header
       ResultFormatter.showHeader();
+
+      // Ask for connection mode if not specified
+      if (!this.options.mode) {
+        this.mode = await ParameterPrompts.getConnectionMode();
+      }
 
       // Handle authentication token
       // Priority: CLI option > Interactive prompt (which handles env var)
@@ -47,12 +58,27 @@ class MCPNetworkCLI {
         }
       }
 
-      // Determine server path
-      const serverPath = this.options.server || path.join(__dirname, '../../dist/index.js');
-      ResultFormatter.showInfo(`Server path: ${serverPath}`);
+      // Connect based on mode
+      if (this.mode === 'api') {
+        // REST API mode
+        let apiUrl = this.options.apiUrl;
+        if (!apiUrl) {
+          apiUrl = await ParameterPrompts.getApiUrl();
+        }
 
-      // Connect to server
-      await this.connection.connect(serverPath, authToken);
+        this.connection = new APIConnection();
+        ResultFormatter.showInfo(`Connecting to API server: ${apiUrl}`);
+        await this.connection.connect(apiUrl, authToken);
+        ResultFormatter.showInfo('✓ Connected to REST API server');
+      } else {
+        // MCP mode
+        const serverPath = this.options.server || path.join(__dirname, '../../dist/index.js');
+        ResultFormatter.showInfo(`Server path: ${serverPath}`);
+
+        this.connection = new MCPConnection();
+        await this.connection.connect(serverPath, authToken);
+        ResultFormatter.showInfo('✓ Connected to MCP server');
+      }
 
       // Main interaction loop
       await this.interactiveLoop();
@@ -73,6 +99,10 @@ class MCPNetworkCLI {
   }
 
   private async interactiveLoop(): Promise<void> {
+    if (!this.connection) {
+      throw new Error('Not connected to server');
+    }
+
     let continueSession = true;
 
     while (continueSession) {
@@ -201,9 +231,18 @@ class MCPNetworkCLI {
   }
 
   private async cleanup(): Promise<void> {
-    if (this.connection.isConnected()) {
-      await this.connection.disconnect();
-      ResultFormatter.showInfo('Disconnected from server');
+    if (this.connection) {
+      // MCP connection has isConnected(), API connection does not
+      if ('isConnected' in this.connection) {
+        if (this.connection.isConnected()) {
+          await this.connection.disconnect();
+          ResultFormatter.showInfo('Disconnected from server');
+        }
+      } else {
+        // API connection - always try to disconnect
+        await this.connection.disconnect();
+        ResultFormatter.showInfo('Disconnected from API server');
+      }
     }
   }
 }
@@ -215,8 +254,10 @@ program
   .name('mcp-network-cli')
   .description('Interactive CLI client for MCP Network Testing Server')
   .version('1.0.0')
-  .option('-s, --server <path>', 'Path to MCP server executable')
+  .option('-s, --server <path>', 'Path to MCP server executable (MCP mode only)')
   .option('-t, --token <token>', 'JWT authentication token')
+  .option('-m, --mode <mode>', 'Connection mode: mcp or api (default: prompt)')
+  .option('-u, --api-url <url>', 'API server URL (API mode only, e.g., http://localhost:3001)')
   .action(async (options: CLIOptions) => {
     const cli = new MCPNetworkCLI(options);
     await cli.start();

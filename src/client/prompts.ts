@@ -279,4 +279,75 @@ export class ParameterPrompts {
 
     return token && token.length > 0 ? token : null;
   }
+
+  static async getConnectionMode(): Promise<'mcp' | 'api'> {
+    console.log(chalk.yellow('\n🔌 Connection Mode\n'));
+
+    const { mode } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'mode',
+        message: 'Select connection mode:',
+        choices: [
+          {
+            name: 'MCP (stdio) - Direct server connection',
+            value: 'mcp',
+            short: 'MCP'
+          },
+          {
+            name: 'REST API - HTTP/HTTPS connection',
+            value: 'api',
+            short: 'REST API'
+          }
+        ],
+        default: 'mcp'
+      }
+    ]);
+
+    return mode;
+  }
+
+  static async getApiUrl(): Promise<string> {
+    const envApiUrl = process.env.API_URL || 'http://localhost:3001';
+
+    console.log(chalk.yellow('\n🌐 API Configuration\n'));
+    console.log(chalk.gray(`Current API_URL from environment: ${envApiUrl}\n`));
+
+    const { useEnvUrl } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'useEnvUrl',
+        message: `Use API URL from environment (${envApiUrl})?`,
+        default: true
+      }
+    ]);
+
+    if (useEnvUrl) {
+      return envApiUrl;
+    }
+
+    // Manual entry
+    const { apiUrl } = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'apiUrl',
+        message: 'Enter API URL (e.g., http://localhost:3001):',
+        default: envApiUrl,
+        validate: (input: string) => {
+          if (!input || input.trim() === '') {
+            return 'API URL is required';
+          }
+          // Basic URL validation
+          try {
+            new URL(input);
+            return true;
+          } catch {
+            return 'Please enter a valid URL (e.g., http://localhost:3001)';
+          }
+        }
+      }
+    ]);
+
+    return apiUrl;
+  }
 }
