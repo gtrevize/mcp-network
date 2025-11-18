@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { homedir } from 'os';
 import { logger } from '../logger/index.js';
 
 // Handle __dirname in both ESM runtime and test environments
@@ -68,11 +69,17 @@ class ConfigurationLoader {
   }
 
   private loadEnvironment(): void {
-    // Load .env file
-    const envPath = path.join(PROJECT_ROOT, '.env');
+    // Check for global .env file first (for npm global installs)
+    const globalEnvPath = path.join(homedir(), '.mcp-network.env');
+    const localEnvPath = path.join(PROJECT_ROOT, '.env');
 
-    if (fs.existsSync(envPath)) {
-      dotenv.config({ path: envPath });
+    if (fs.existsSync(globalEnvPath)) {
+      dotenv.config({ path: globalEnvPath });
+      if (process.env.LOG_LEVEL !== 'silent') {
+        logger.info(`Loaded configuration from ${globalEnvPath}`);
+      }
+    } else if (fs.existsSync(localEnvPath)) {
+      dotenv.config({ path: localEnvPath });
       if (process.env.LOG_LEVEL !== 'silent') {
         logger.info('Loaded configuration from .env file');
       }

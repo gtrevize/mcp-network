@@ -20,7 +20,21 @@ import { healthRouter } from './routes/health.js';
 
 // Load environment variables
 import dotenv from 'dotenv';
-dotenv.config();
+import { existsSync } from 'fs';
+import { join } from 'path';
+import { homedir } from 'os';
+
+// Check for global .env file first (for npm global installs)
+const globalEnvPath = join(homedir(), '.mcp-network.env');
+const localEnvPath = join(process.cwd(), '.env');
+
+if (existsSync(globalEnvPath)) {
+  dotenv.config({ path: globalEnvPath });
+} else if (existsSync(localEnvPath)) {
+  dotenv.config({ path: localEnvPath });
+} else {
+  dotenv.config(); // Try default .env location
+}
 
 const app: Express = express();
 const PORT = parseInt(process.env.API_PORT || '3000', 10);

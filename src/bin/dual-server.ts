@@ -7,9 +7,24 @@
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { existsSync } from 'fs';
+import { homedir } from 'os';
+import dotenv from 'dotenv';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Load environment variables from global config if it exists
+const globalEnvPath = join(homedir(), '.mcp-network.env');
+const localEnvPath = join(process.cwd(), '.env');
+
+if (existsSync(globalEnvPath)) {
+  console.log(`📋 Loading configuration from ${globalEnvPath}\n`);
+  dotenv.config({ path: globalEnvPath });
+} else if (existsSync(localEnvPath)) {
+  console.log(`📋 Loading configuration from ${localEnvPath}\n`);
+  dotenv.config({ path: localEnvPath });
+}
 
 const mcpServer = join(__dirname, '../index.js');
 const apiServer = join(__dirname, '../rest-api/server.js');
