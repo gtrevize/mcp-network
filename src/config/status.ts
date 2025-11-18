@@ -8,6 +8,8 @@
 import chalk from 'chalk';
 import boxen from 'boxen';
 import Table from 'cli-table3';
+import { Command } from 'commander';
+import inquirer from 'inquirer';
 import { getConfig } from './loader.js';
 import { validateNetworkTools } from '../utils/startup-validator.js';
 import { existsSync } from 'fs';
@@ -26,9 +28,13 @@ interface TokenInfo {
   error?: string;
 }
 
-function maskSecret(secret: string, visibleChars: number = 8): string {
+function maskSecret(secret: string, visibleChars: number = 8, showFull: boolean = false): string {
   if (!secret || secret.length === 0) return chalk.gray('(not set)');
   if (secret === 'CHANGEME') return chalk.red('CHANGEME (⚠️  change this!)');
+
+  if (showFull) {
+    return chalk.yellow(secret);
+  }
 
   const visible = secret.substring(0, visibleChars);
   const masked = '*'.repeat(Math.min(secret.length - visibleChars, 32));
@@ -94,7 +100,7 @@ function displayServerInfo(config: any) {
   console.log(table.toString());
 }
 
-function displayAuthInfo(config: any) {
+function displayAuthInfo(config: any, showFullTokens: boolean = false) {
   console.log('\n' + chalk.bold.yellow('🔐 Authentication & Security\n'));
 
   const table = new Table({
@@ -108,14 +114,14 @@ function displayAuthInfo(config: any) {
   });
 
   // JWT Secret
-  table.push(['JWT Secret', maskSecret(config.jwt.secret, 8)]);
+  table.push(['JWT Secret', maskSecret(config.jwt.secret, 8, showFullTokens)]);
 
   // AUTH_TOKEN analysis
   const authToken = process.env.AUTH_TOKEN;
   if (authToken && authToken !== 'CHANGEME') {
     const tokenInfo = decodeToken(authToken, config.jwt.secret);
 
-    table.push(['AUTH_TOKEN', maskSecret(authToken, 12)]);
+    table.push(['AUTH_TOKEN', maskSecret(authToken, 12, showFullTokens)]);
 
     if (tokenInfo.valid) {
       table.push(
@@ -284,14 +290,55 @@ function displayEnvFileInfo() {
   console.log(table.toString());
 }
 
+async function confirmShowTokens(): Promise<boolean> {
+  console.log('\n' + chalk.red.bold('⚠️  WARNING: Security Risk\n'));
+  console.log(chalk.yellow('You are about to display unmasked secrets and tokens.'));
+  console.log(chalk.yellow('This will show sensitive information in plain text.\n'));
+
+  const { confirmed } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'confirmed',
+      message: 'Are you sure you want to display full unmasked tokens?',
+      default: false
+    }
+  ]);
+
+  return confirmed;
+}
+
 async function main() {
+  const program = new Command();
+
+  program
+    .name('mcp-network-status')
+    .description('Display current MCP Network server configuration')
+    .version('0.1.12')
+    .option('--show-tokens', 'Show full unmasked tokens (requires confirmation)')
+    .parse(process.argv);
+
+  const options = program.opts();
+
   try {
     console.clear();
+
+    let showFullTokens = false;
+
+    // Handle --show-tokens flag with confirmation
+    if (options.showTokens) {
+      showFullTokens = await confirmShowTokens();
+
+      if (!showFullTokens) {
+        console.log(chalk.gray('\nToken display cancelled. Showing masked tokens instead.\n'));
+      } else {
+        console.log(chalk.yellow('\n✓ Displaying full unmasked tokens\n'));
+      }
+    }
 
     const config = getConfig();
 
     displayServerInfo(config);
-    displayAuthInfo(config);
+    displayAuthInfo(config, showFullTokens);
     displayApiInfo(config);
     displayLetsEncryptInfo(config);
     displayToolsInfo(config);
